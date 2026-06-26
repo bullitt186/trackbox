@@ -52,7 +52,13 @@ def extract_and_generate_parser(email: dict) -> tuple[dict | None, dict | None]:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     model = os.getenv("OPENAI_MODEL", "gpt-4o")
 
-    user_content = f"From: {email['from']}\nSubject: {email['subject']}\n\nBody:\n{email['body']}"
+    body = email['body']
+    html = email.get('html', '')
+    # If body is very short but HTML is available, include first 2000 chars of HTML for context
+    html_hint = ""
+    if html and len(body) < 100:
+        html_hint = f"\n\nHTML (raw, first 2000 chars):\n{html[:2000]}"
+    user_content = f"From: {email['from']}\nSubject: {email['subject']}\n\nBody:\n{body}{html_hint}"
 
     try:
         response = client.chat.completions.create(

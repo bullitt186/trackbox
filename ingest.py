@@ -32,8 +32,10 @@ def process_email(email: dict) -> dict:
     field_map = None
     parser_status = "none"
 
+    raw_html = email.get("html", "")
+
     if parser:
-        extracted = apply_field_map(json.loads(parser["field_map"]), body)
+        extracted = apply_field_map(json.loads(parser["field_map"]), body, raw_html)
         # Self-healing: if all fields are None, fall back to AI
         if all(v is None for v in extracted.values()):
             extracted = None
@@ -153,11 +155,11 @@ def strip_html(html: str) -> str:
     return text.strip()
 
 
-def apply_field_map(field_map: dict, body: str) -> dict:
-    return {field: apply_strategy(strat, body) for field, strat in field_map.items()}
+def apply_field_map(field_map: dict, body: str, html: str = "") -> dict:
+    return {field: apply_strategy(strat, body, html) for field, strat in field_map.items()}
 
 
-def apply_strategy(strategy_def: dict, body: str) -> str | None:
+def apply_strategy(strategy_def: dict, body: str, html: str = "") -> str | None:
     strategy = strategy_def.get("strategy")
     if strategy == "literal":
         return strategy_def.get("value")
@@ -172,7 +174,11 @@ def apply_strategy(strategy_def: dict, body: str) -> str | None:
         return None
     elif strategy == "link_containing":
         contains = strategy_def.get("contains", "")
+        # Search both plain text body and raw HTML for URLs
         for url in URL_RE.findall(body):
+            if contains in url:
+                return url
+        for url in URL_RE.findall(html):
             if contains in url:
                 return url
         return None
