@@ -143,13 +143,21 @@ def compute_fingerprint(sender: str, subject: str) -> tuple[str, list[str]]:
     cleaned = re.sub(r'\(.*?\)', '', cleaned)
     # Strip DHL-style merchant name: "Ihre {MERCHANT} Sendung" → "ihre sendung"
     cleaned = re.sub(r'(?i)\bihre\s+.+?\s+sendung\b', 'ihre sendung', cleaned)
+    # Strip Hermes merchant: "Sendung von X ist" → "Sendung ist"
+    cleaned = re.sub(r'(?i)\bsendung\s+von\s+.+?\s+ist\b', 'sendung ist', cleaned)
     # Strip DHL apology prefix
     cleaned = re.sub(r'(?i)^es tut uns leid\s*[-–]\s*', '', cleaned)
+    # Strip trailing "Jetzt Live verfolgen" / "Jetzt live verfolgen..."
+    cleaned = re.sub(r'(?i)\s*-?\s*jetzt\s+live\s+verfolgen.*$', '', cleaned)
     tokens = re.split(r'[\s\-_/|:,;]+', cleaned.lower())
     tokens = [re.sub(r'[^a-z0-9]', '', t) for t in tokens]
+    # ponytail: stopwords list covers German/English filler in carrier subjects
+    stopwords = {"ihre", "deine", "jetzt", "live", "heute", "uns", "tut", "leid",
+                 "the", "your", "for", "has", "been", "und", "von", "dem", "auf",
+                 "ist", "wird", "mit", "Sie", "wir", "dir", "sich"}
     keywords = sorted(set(
         t for t in tokens
-        if len(t) >= 3 and not is_variable_token(t)
+        if len(t) >= 3 and not is_variable_token(t) and t not in stopwords
     ))
     return domain, keywords
 
