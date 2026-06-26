@@ -60,7 +60,7 @@ def process_email(email: dict) -> dict:
     if email.get("product_name"):
         extracted["title"] = email["product_name"]
     # Fallback: extract merchant from DHL-style "Ihre X Sendung" subject
-    elif not extracted.get("title") or extracted["title"] in ("DHL Paket", "DHL", "Paket"):
+    elif not extracted.get("title") or extracted["title"] in ("DHL Paket", "DHL", "Paket", "Hermes Sendung", "Hermes"):
         merchant = extract_merchant_from_subject(email["subject"])
         if merchant:
             extracted["title"] = merchant
@@ -147,12 +147,17 @@ def is_variable_token(token: str) -> bool:
 
 
 def extract_merchant_from_subject(subject: str) -> str | None:
-    """Extract merchant name from DHL-style 'Ihre X Sendung ...' subjects."""
+    """Extract merchant name from carrier subject patterns."""
+    # DHL: "Ihre X Sendung ..."
     match = re.search(r'(?i)\bihre\s+(.+?)\s+sendung\b', subject)
     if match:
         merchant = match.group(1).strip().rstrip('.')
         if merchant and merchant.lower() not in ('dhl', 'paket'):
             return merchant
+    # Hermes: "Deine Hermes Sendung von X ist auf dem Weg"
+    match = re.search(r'(?i)\bsendung\s+von\s+(.+?)\s+ist\b', subject)
+    if match:
+        return match.group(1).strip()
     return None
 
 
