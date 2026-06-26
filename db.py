@@ -17,6 +17,16 @@ def get_conn() -> sqlite3.Connection:
 def init_db():
     conn = get_conn()
     conn.executescript("""
+        -- Migration: add message_id to events if missing
+        CREATE TABLE IF NOT EXISTS _migrations (id INTEGER PRIMARY KEY, name TEXT UNIQUE);
+    """)
+    try:
+        conn.execute("ALTER TABLE events ADD COLUMN message_id TEXT")
+        conn.execute("INSERT OR IGNORE INTO _migrations (name) VALUES ('add_message_id')")
+        conn.commit()
+    except Exception:
+        pass
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS shipments (
             id INTEGER PRIMARY KEY,
             title TEXT,
