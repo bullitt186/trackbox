@@ -89,10 +89,17 @@ def process_email(email: dict) -> dict:
 
     if shipment:
         updates = {}
-        for field in ("tracking_number", "order_number", "carrier", "tracking_link"):
+        for field in ("tracking_number", "order_number", "carrier"):
             val = extracted.get(field)
             if val and not shipment.get(field):
                 updates[field] = val
+        # Always update tracking_link if new one is a normalized public URL
+        new_link = extracted.get("tracking_link")
+        if new_link and new_link != shipment.get("tracking_link"):
+            if "dhl.de/de/privatkunden" in new_link or "myhermes.de" in new_link or "parcelsapp.com" in new_link:
+                updates["tracking_link"] = new_link
+            elif not shipment.get("tracking_link"):
+                updates["tracking_link"] = new_link
         # Title: update if new title is better (longer or existing is generic)
         new_title = extracted.get("title")
         if new_title and (not shipment.get("title") or len(new_title) > len(shipment["title"])):
