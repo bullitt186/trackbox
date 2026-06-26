@@ -79,10 +79,14 @@ def process_email(email: dict) -> dict:
 
     if shipment:
         updates = {}
-        for field in ("title", "tracking_number", "order_number", "carrier", "tracking_link"):
+        for field in ("tracking_number", "order_number", "carrier", "tracking_link"):
             val = extracted.get(field)
             if val and not shipment.get(field):
                 updates[field] = val
+        # Title: update if new title is better (longer or existing is generic)
+        new_title = extracted.get("title")
+        if new_title and (not shipment.get("title") or len(new_title) > len(shipment["title"])):
+            updates["title"] = new_title
         if should_update_state(shipment["current_state"], status):
             updates["current_state"] = status
         if updates:
