@@ -53,6 +53,16 @@ async def api_shipments(state: str | None = None):
     return shipments
 
 
+@app.get("/api/shipments/{shipment_id}")
+async def api_shipment_detail(shipment_id: int):
+    """JSON detail of a single shipment with events."""
+    shipment = db.get_shipment(shipment_id)
+    if not shipment:
+        raise HTTPException(404)
+    events = db.get_events(shipment_id)
+    return {**shipment, "events": events}
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     shipments = db.list_shipments()
