@@ -44,7 +44,7 @@
         <dt>Order Number</dt>
         <dd>{{ shipment.order_number or "—" }}</dd>
         <dt>Tracking Link</dt>
-        <dd>{% if shipment.tracking_link %}<a href="{{ shipment.tracking_link }}" target="_blank">{{ shipment.tracking_link }}</a>{% else %}—{% endif %}</dd>
+        <dd>{% if shipment.tracking_link %}<a href="{{ shipment.tracking_link }}" target="_blank" style="display:inline-block;padding:0.3rem 0.8rem;background:#0066cc;color:white;border-radius:4px;text-decoration:none;font-size:0.85rem">Track Package ↗</a>{% else %}—{% endif %}</dd>
         <dt>First Seen</dt>
         <dd>{{ shipment.first_seen_at[:16] if shipment.first_seen_at else "—" }}</dd>
         <dt>Last Updated</dt>

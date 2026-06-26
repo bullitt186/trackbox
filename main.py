@@ -72,6 +72,25 @@ async def api_shipment_detail(shipment_id: int):
     return {**shipment, "events": events}
 
 
+@app.delete("/api/parsers/{parser_id}")
+async def delete_parser(parser_id: int):
+    """Delete a stored parser."""
+    conn = db.get_conn()
+    conn.execute("DELETE FROM parsers WHERE id = ?", (parser_id,))
+    conn.commit()
+    conn.close()
+    return {"deleted": parser_id}
+
+
+@app.get("/api/parsers")
+async def api_parsers():
+    """JSON list of all stored parsers with use counts."""
+    conn = db.get_conn()
+    rows = conn.execute("SELECT * FROM parsers ORDER BY use_count DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     shipments = db.list_shipments()

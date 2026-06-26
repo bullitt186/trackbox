@@ -108,6 +108,7 @@ def find_shipment(tracking_number: str | None, order_number: str | None):
 
 def create_shipment(fields: dict) -> int:
     now = _now()
+    first_seen = fields.get("_first_seen_at") or now
     conn = get_conn()
     cur = conn.execute(
         """INSERT INTO shipments (title, tracking_number, order_number, carrier,
@@ -120,7 +121,7 @@ def create_shipment(fields: dict) -> int:
             fields.get("carrier"),
             fields.get("tracking_link"),
             fields.get("status", "unknown"),
-            now, now
+            first_seen, now
         )
     )
     conn.commit()

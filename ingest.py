@@ -116,6 +116,7 @@ def process_email(email: dict) -> dict:
         action = "updated"
         final_state = updates.get("current_state") or shipment["current_state"]
     else:
+        extracted["_first_seen_at"] = email.get("date")
         shipment_id = db.create_shipment(extracted)
         action = "created"
         final_state = status
