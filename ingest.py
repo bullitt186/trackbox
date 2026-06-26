@@ -60,6 +60,10 @@ def process_email(email: dict) -> dict:
     if email.get("product_name"):
         extracted["title"] = email["product_name"]
 
+    # Extract tracking number from tracking_link if not already present
+    if not extracted.get("tracking_number") and extracted.get("tracking_link"):
+        extracted["tracking_number"] = extract_tracking_from_url(extracted["tracking_link"])
+
     status = extracted.get("status", "unknown")
 
     # Match to existing shipment
@@ -135,6 +139,23 @@ def is_variable_token(token: str) -> bool:
     if re.match(r'\d{1,4}[/\-\.]\d{1,2}', token):
         return True
     return False
+
+
+def extract_tracking_from_url(url: str) -> str | None:
+    """Extract tracking number from known carrier URL patterns."""
+    from urllib.parse import urlparse, parse_qs
+    parsed = urlparse(url)
+    params = parse_qs(parsed.query)
+    # DHL: piececode parameter
+    if "piececode" in params:
+        return params["piececode"][0]
+    # Amazon: orderId parameter
+    if "orderId" in params:
+        return params["orderId"][0]
+    # Hermes: fragment contains tracking number (e.g. #H1018660616235701042)
+    if parsed.fragment and re.match(r'^[A-Z0-9]{10,}', parsed.fragment):
+        return parsed.fragment.split('/')[0]
+    return None
 
 
 def get_effective_body(email: dict) -> str:
