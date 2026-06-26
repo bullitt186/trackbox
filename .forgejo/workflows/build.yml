@@ -7,10 +7,6 @@ on:
 jobs:
   build:
     runs-on: docker-build
-    container:
-      image: docker:cli
-      volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - uses: actions/checkout@v4
 
