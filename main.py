@@ -42,6 +42,15 @@ async def ingest_email(payload: EmailPayload):
     return result
 
 
+@app.get("/health")
+async def health():
+    """Health check for monitoring."""
+    conn = db.get_conn()
+    conn.execute("SELECT 1").fetchone()
+    conn.close()
+    return {"status": "ok"}
+
+
 @app.get("/api/shipments")
 async def api_shipments(state: str | None = None):
     """JSON list of shipments. Optional ?state=active or ?state=delivered."""
