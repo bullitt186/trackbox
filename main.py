@@ -80,6 +80,15 @@ async def update_state(shipment_id: int, state: str = Form(...), notes: str = Fo
     return RedirectResponse(f"/shipments/{shipment_id}", status_code=303)
 
 
+@app.post("/shipments/{shipment_id}/title")
+async def update_title(shipment_id: int, title: str = Form(...)):
+    shipment = db.get_shipment(shipment_id)
+    if not shipment:
+        raise HTTPException(404)
+    db.update_shipment(shipment_id, {"title": title})
+    return RedirectResponse(f"/shipments/{shipment_id}", status_code=303)
+
+
 @app.post("/shipments/{shipment_id}/delete")
 async def delete_shipment(shipment_id: int):
     db.delete_shipment(shipment_id)

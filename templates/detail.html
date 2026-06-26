@@ -28,7 +28,11 @@
 <body>
     <p><a href="/">← All shipments</a></p>
 
-    <h1>{{ shipment.title or "Shipment #" ~ shipment.id }}</h1>
+    <h1 style="display:inline">{{ shipment.title or "Shipment #" ~ shipment.id }}</h1>
+    <form method="post" action="/shipments/{{ shipment.id }}/title" style="display:inline; margin-left:1rem">
+        <input type="text" name="title" placeholder="Edit title" size="25" value="{{ shipment.title or '' }}">
+        <button type="submit" style="font-size:0.8rem">Save</button>
+    </form>
 
     <dl>
         <dt>State</dt>
