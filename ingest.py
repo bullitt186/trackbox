@@ -59,6 +59,11 @@ def process_email(email: dict) -> dict:
     # Override title with product_name if provided
     if email.get("product_name"):
         extracted["title"] = email["product_name"]
+    # Fallback: extract merchant from DHL-style "Ihre X Sendung" subject
+    elif not extracted.get("title") or extracted["title"] in ("DHL Paket", "DHL", "Paket"):
+        merchant = extract_merchant_from_subject(email["subject"])
+        if merchant:
+            extracted["title"] = merchant
 
     # Extract tracking number from tracking_link if not already present
     if not extracted.get("tracking_number") and extracted.get("tracking_link"):
@@ -139,6 +144,16 @@ def is_variable_token(token: str) -> bool:
     if re.match(r'\d{1,4}[/\-\.]\d{1,2}', token):
         return True
     return False
+
+
+def extract_merchant_from_subject(subject: str) -> str | None:
+    """Extract merchant name from DHL-style 'Ihre X Sendung ...' subjects."""
+    match = re.search(r'(?i)\bihre\s+(.+?)\s+sendung\b', subject)
+    if match:
+        merchant = match.group(1).strip().rstrip('.')
+        if merchant and merchant.lower() not in ('dhl', 'paket'):
+            return merchant
+    return None
 
 
 def extract_tracking_from_url(url: str) -> str | None:
