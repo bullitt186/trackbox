@@ -139,8 +139,12 @@ def get_effective_body(email: dict) -> str:
 
 
 def strip_html(html: str) -> str:
-    text = re.sub(r'<[^>]+>', ' ', html)
-    text = re.sub(r'\s+', ' ', text)
+    # Preserve href URLs as inline text
+    text = re.sub(r'<a\s[^>]*href=["\']([^"\']+)["\'][^>]*>', r' \1 ', html, flags=re.IGNORECASE)
+    text = re.sub(r'<br\s*/?\s*>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<[^>]+>', ' ', text)
+    text = re.sub(r'[ \t]+', ' ', text)
+    text = re.sub(r'\n ', '\n', text)
     return text.strip()
 
 
