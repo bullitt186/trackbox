@@ -6,7 +6,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: docker-build
+    container:
+      image: docker:cli
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - uses: actions/checkout@v4
 
@@ -16,6 +20,4 @@ jobs:
       - name: Build and push
         run: |
           docker build -t git.stahmer.lan/bullitt/trackbox:latest .
-          docker build -t git.stahmer.lan/bullitt/trackbox:${{ github.sha }} .
           docker push git.stahmer.lan/bullitt/trackbox:latest
-          docker push git.stahmer.lan/bullitt/trackbox:${{ github.sha }}
