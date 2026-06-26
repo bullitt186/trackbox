@@ -69,6 +69,10 @@ def process_email(email: dict) -> dict:
     if not extracted.get("tracking_number") and extracted.get("tracking_link"):
         extracted["tracking_number"] = extract_tracking_from_url(extracted["tracking_link"])
 
+    # Clean tracking number (strip non-alphanumeric trailing garbage)
+    if extracted.get("tracking_number"):
+        extracted["tracking_number"] = re.match(r'[\w\-]+', extracted["tracking_number"]).group(0) if re.match(r'[\w\-]+', extracted["tracking_number"]) else extracted["tracking_number"]
+
     # Normalize tracking link to persistent public URL
     if extracted.get("tracking_number"):
         extracted["tracking_link"] = normalize_tracking_link(
