@@ -51,6 +51,21 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/api/stats")
+async def api_stats():
+    """System statistics."""
+    conn = db.get_conn()
+    shipments = conn.execute("SELECT current_state, COUNT(*) as cnt FROM shipments GROUP BY current_state").fetchall()
+    parser_count = conn.execute("SELECT COUNT(*) FROM parsers").fetchone()[0]
+    event_count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+    conn.close()
+    return {
+        "shipments_by_state": {r["current_state"]: r["cnt"] for r in shipments},
+        "total_parsers": parser_count,
+        "total_events": event_count,
+    }
+
+
 @app.get("/api/shipments")
 async def api_shipments(state: str | None = None):
     """JSON list of shipments. Optional ?state=active or ?state=delivered."""
@@ -59,6 +74,18 @@ async def api_shipments(state: str | None = None):
         shipments = [s for s in shipments if s["current_state"] != "delivered"]
     elif state == "delivered":
         shipments = [s for s in shipments if s["current_state"] == "delivered"]
+    # Sort active by state urgency (out_for_delivery first, then in_transit, etc)
+    state_priority = {"out_for_delivery": 0, "delayed": 1, "exception": 1, "in_transit": 2, "shipped": 3, "preparing": 4, "unknown": 5, "delivered": 6}
+    shipments.sort(key=lambda s: state_priority.get(s["current_state"], 5))
+    # Add last_event summary
+    conn = db.get_conn()
+    for s in shipments:
+        row = conn.execute(
+            "SELECT state, notes, occurred_at FROM events WHERE shipment_id = ? ORDER BY occurred_at DESC LIMIT 1",
+            (s["id"],)
+        ).fetchone()
+        s["last_event"] = dict(row) if row else None
+    conn.close()
     return shipments
 
 

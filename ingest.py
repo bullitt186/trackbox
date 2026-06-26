@@ -210,6 +210,14 @@ def normalize_tracking_link(current_link: str | None, tracking_number: str, carr
         return f"https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode={tracking_number}"
     if "hermes" in c or (current_link and "hermes" in current_link):
         return f"https://www.myhermes.de/empfangen/sendungsverfolgung/sendungsinformation/#{tracking_number}"
+    if "dpd" in c:
+        return f"https://tracking.dpd.de/status/de_DE/parcel/{tracking_number}"
+    if "gls" in c:
+        return f"https://gls-group.eu/DE/de/paketverfolgung?match={tracking_number}"
+    if "ups" in c:
+        return f"https://www.ups.com/track?tracknum={tracking_number}"
+    if "fedex" in c:
+        return f"https://www.fedex.com/fedextrack/?trknbr={tracking_number}"
     return current_link or f"https://parcelsapp.com/en/tracking/{tracking_number}"
 
 
@@ -236,6 +244,14 @@ def extract_tracking_from_url(url: str) -> str | None:
     # DHL: piececode parameter
     if "piececode" in params:
         return params["piececode"][0]
+    # GLS: match parameter
+    if "match" in params:
+        return params["match"][0]
+    # UPS/FedEx: tracknum/trknbr
+    if "tracknum" in params:
+        return params["tracknum"][0]
+    if "trknbr" in params:
+        return params["trknbr"][0]
     # Amazon: orderId parameter
     if "orderId" in params:
         return params["orderId"][0]
