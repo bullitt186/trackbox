@@ -1,0 +1,21 @@
+name: Build and Push Container Image
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Forgejo Container Registry
+        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login git.stahmer.lan -u bullitt --password-stdin
+
+      - name: Build and push
+        run: |
+          docker build -t git.stahmer.lan/bullitt/trackbox:latest .
+          docker build -t git.stahmer.lan/bullitt/trackbox:${{ github.sha }} .
+          docker push git.stahmer.lan/bullitt/trackbox:latest
+          docker push git.stahmer.lan/bullitt/trackbox:${{ github.sha }}
