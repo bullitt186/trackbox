@@ -126,6 +126,10 @@ def process_email(email: dict) -> dict:
         "state": final_state,
         "action": action,
         "parser_status": parser_status,
+        "title": extracted.get("title"),
+        "tracking_number": extracted.get("tracking_number"),
+        "tracking_link": extracted.get("tracking_link"),
+        "carrier": extracted.get("carrier"),
     }
 
 
