@@ -41,6 +41,17 @@ async def ingest_email(payload: EmailPayload):
     return result
 
 
+@app.get("/api/shipments")
+async def api_shipments(state: str | None = None):
+    """JSON list of shipments. Optional ?state=active or ?state=delivered."""
+    shipments = db.list_shipments(limit=200)
+    if state == "active":
+        shipments = [s for s in shipments if s["current_state"] != "delivered"]
+    elif state == "delivered":
+        shipments = [s for s in shipments if s["current_state"] == "delivered"]
+    return shipments
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     shipments = db.list_shipments()
