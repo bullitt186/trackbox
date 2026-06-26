@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Trackbox</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #ddd; }
+        a { color: #0066cc; }
+        .state { padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: 500; }
+        .state-delivered { background: #d4edda; color: #155724; }
+        .state-shipped, .state-in_transit { background: #cce5ff; color: #004085; }
+        .state-out_for_delivery { background: #fff3cd; color: #856404; }
+        .state-delayed, .state-exception { background: #f8d7da; color: #721c24; }
+        .state-preparing { background: #e2e3e5; color: #383d41; }
+        .state-unknown { background: #f0f0f0; color: #666; }
+        .empty { color: #666; padding: 2rem; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Trackbox</h1>
+    {% if shipments %}
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Carrier</th>
+                <th>State</th>
+                <th>Last Updated</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in shipments %}
+            <tr>
+                <td><a href="/shipments/{{ s.id }}">{{ s.title or s.order_number or s.tracking_number or "Shipment #" ~ s.id }}</a></td>
+                <td>{{ s.carrier or "—" }}</td>
+                <td><span class="state state-{{ s.current_state }}">{{ s.current_state }}</span></td>
+                <td>{{ s.last_updated_at[:16] if s.last_updated_at else "—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No shipments yet. POST an email to /ingest to get started.</p>
+    {% endif %}
+</body>
+</html>

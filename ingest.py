@@ -1,0 +1,172 @@
+import re
+import json
+
+import db
+import ai
+
+URL_RE = re.compile(r'https?://[^\s<>"\')\]]+')
+
+STATE_ORDER = {
+    "unknown": 0, "preparing": 1, "shipped": 2, "in_transit": 3,
+    "out_for_delivery": 4, "delivered": 5, "delayed": 3, "exception": 3
+}
+
+
+def process_email(email: dict) -> dict:
+    """
+    Main pipeline. email has keys: from, subject, body, html (optional).
+    Returns {shipment_id, state, action, parser_status}.
+    """
+    body = get_effective_body(email)
+    email_with_body = {**email, "body": body}
+
+    domain, keywords = compute_fingerprint(email["from"], email["subject"])
+    parser = db.find_parser(domain, keywords)
+
+    extracted = None
+    field_map = None
+    parser_status = "none"
+
+    if parser:
+        extracted = apply_field_map(json.loads(parser["field_map"]), body)
+        # Self-healing: if all fields are None, fall back to AI
+        if all(v is None for v in extracted.values()):
+            extracted = None
+        else:
+            db.increment_parser_use(parser["id"])
+            parser_status = "existing"
+
+    if extracted is None:
+        extracted, field_map = ai.extract_and_generate_parser(email_with_body)
+        if extracted is None:
+            extracted = {"status": "unknown"}
+            parser_status = "failed"
+        else:
+            parser_status = "new"
+            if field_map:
+                if parser:
+                    db.update_parser_field_map(parser["id"], field_map)
+                else:
+                    db.create_parser(domain, keywords, field_map)
+
+    # Override title with product_name if provided
+    if email.get("product_name"):
+        extracted["title"] = email["product_name"]
+
+    status = extracted.get("status", "unknown")
+
+    # Match to existing shipment
+    shipment = db.find_shipment(
+        extracted.get("tracking_number"),
+        extracted.get("order_number")
+    )
+
+    if shipment:
+        updates = {}
+        for field in ("title", "tracking_number", "order_number", "carrier", "tracking_link"):
+            val = extracted.get(field)
+            if val and not shipment.get(field):
+                updates[field] = val
+        if should_update_state(shipment["current_state"], status):
+            updates["current_state"] = status
+        if updates:
+            db.update_shipment(shipment["id"], updates)
+        shipment_id = shipment["id"]
+        action = "updated"
+        final_state = updates.get("current_state") or shipment["current_state"]
+    else:
+        shipment_id = db.create_shipment(extracted)
+        action = "created"
+        final_state = status
+    db.add_event(shipment_id, final_state, email["subject"], "email")
+
+    return {
+        "shipment_id": shipment_id,
+        "state": final_state,
+        "action": action,
+        "parser_status": parser_status,
+    }
+
+
+def should_update_state(current: str, new: str) -> bool:
+    if new in ("delayed", "exception"):
+        return True
+    return STATE_ORDER.get(new, 0) > STATE_ORDER.get(current, 0)
+
+
+def compute_fingerprint(sender: str, subject: str) -> tuple[str, list[str]]:
+    domain = extract_domain(sender)
+    # Strip quoted/bracketed content (product names, variable descriptions)
+    cleaned = re.sub(r'[„"\"\'].*?["\"\'\.]\.\.\.?', '', subject)
+    cleaned = re.sub(r'\[.*?\]', '', cleaned)
+    cleaned = re.sub(r'\(.*?\)', '', cleaned)
+    # Strip DHL-style merchant name: "Ihre {MERCHANT} Sendung" → "ihre sendung"
+    cleaned = re.sub(r'(?i)\bihre\s+.+?\s+sendung\b', 'ihre sendung', cleaned)
+    # Strip DHL apology prefix
+    cleaned = re.sub(r'(?i)^es tut uns leid\s*[-–]\s*', '', cleaned)
+    tokens = re.split(r'[\s\-_/|:,;]+', cleaned.lower())
+    tokens = [re.sub(r'[^a-z0-9]', '', t) for t in tokens]
+    keywords = sorted(set(
+        t for t in tokens
+        if len(t) >= 3 and not is_variable_token(t)
+    ))
+    return domain, keywords
+
+
+def extract_domain(sender: str) -> str:
+    match = re.search(r'[\w.+-]+@([\w.-]+)', sender)
+    if match:
+        return match.group(1).lower()
+    return sender.lower().strip()
+
+
+def is_variable_token(token: str) -> bool:
+    if re.match(r'^\d+$', token):
+        return True
+    if re.search(r'\d', token):
+        return True
+    if re.match(r'\d{1,4}[/\-\.]\d{1,2}', token):
+        return True
+    return False
+
+
+def get_effective_body(email: dict) -> str:
+    if email.get("body") and email["body"].strip():
+        return email["body"]
+    if email.get("html"):
+        return strip_html(email["html"])
+    return ""
+
+
+def strip_html(html: str) -> str:
+    text = re.sub(r'<[^>]+>', ' ', html)
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
+
+
+def apply_field_map(field_map: dict, body: str) -> dict:
+    return {field: apply_strategy(strat, body) for field, strat in field_map.items()}
+
+
+def apply_strategy(strategy_def: dict, body: str) -> str | None:
+    strategy = strategy_def.get("strategy")
+    if strategy == "literal":
+        return strategy_def.get("value")
+    elif strategy == "after_label":
+        label = strategy_def.get("label", "")
+        for line in body.splitlines():
+            if label.lower() in line.lower():
+                idx = line.lower().index(label.lower()) + len(label)
+                value = line[idx:].strip().rstrip(':').strip()
+                if value:
+                    return value
+        return None
+    elif strategy == "link_containing":
+        contains = strategy_def.get("contains", "")
+        for url in URL_RE.findall(body):
+            if contains in url:
+                return url
+        return None
+    elif strategy == "none":
+        return None
+    return None
