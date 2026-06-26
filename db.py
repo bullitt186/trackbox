@@ -34,7 +34,8 @@ def init_db():
             state TEXT,
             notes TEXT,
             source TEXT,
-            occurred_at TEXT
+            occurred_at TEXT,
+            message_id TEXT
         );
         CREATE TABLE IF NOT EXISTS parsers (
             id INTEGER PRIMARY KEY,
@@ -145,16 +146,23 @@ def delete_shipment(shipment_id: int):
 
 # --- Events ---
 
-def add_event(shipment_id: int, state: str, notes: str, source: str) -> int:
+def add_event(shipment_id: int, state: str, notes: str, source: str, message_id: str | None = None) -> int:
     conn = get_conn()
     cur = conn.execute(
-        "INSERT INTO events (shipment_id, state, notes, source, occurred_at) VALUES (?, ?, ?, ?, ?)",
-        (shipment_id, state, notes, source, _now())
+        "INSERT INTO events (shipment_id, state, notes, source, occurred_at, message_id) VALUES (?, ?, ?, ?, ?, ?)",
+        (shipment_id, state, notes, source, _now(), message_id)
     )
     conn.commit()
     event_id = cur.lastrowid
     conn.close()
     return event_id
+
+
+def event_exists_for_message_id(message_id: str) -> bool:
+    conn = get_conn()
+    row = conn.execute("SELECT 1 FROM events WHERE message_id = ?", (message_id,)).fetchone()
+    conn.close()
+    return row is not None
 
 
 def get_events(shipment_id: int):

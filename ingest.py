@@ -14,9 +14,14 @@ STATE_ORDER = {
 
 def process_email(email: dict) -> dict:
     """
-    Main pipeline. email has keys: from, subject, body, html (optional).
+    Main pipeline. email has keys: from, subject, body, html (optional), message_id (optional).
     Returns {shipment_id, state, action, parser_status}.
     """
+    # Dedup: skip if this message_id was already processed
+    msg_id = email.get("message_id")
+    if msg_id and db.event_exists_for_message_id(msg_id):
+        return {"shipment_id": None, "state": None, "action": "skipped", "parser_status": "dedup"}
+
     body = get_effective_body(email)
     email_with_body = {**email, "body": body}
 
@@ -78,7 +83,7 @@ def process_email(email: dict) -> dict:
         shipment_id = db.create_shipment(extracted)
         action = "created"
         final_state = status
-    db.add_event(shipment_id, final_state, email["subject"], "email")
+    db.add_event(shipment_id, final_state, email["subject"], "email", message_id=msg_id)
 
     return {
         "shipment_id": shipment_id,
