@@ -69,6 +69,12 @@ def process_email(email: dict) -> dict:
     if not extracted.get("tracking_number") and extracted.get("tracking_link"):
         extracted["tracking_number"] = extract_tracking_from_url(extracted["tracking_link"])
 
+    # Normalize tracking link to persistent public URL
+    if extracted.get("tracking_number"):
+        extracted["tracking_link"] = normalize_tracking_link(
+            extracted.get("tracking_link"), extracted["tracking_number"], extracted.get("carrier")
+        )
+
     status = extracted.get("status", "unknown")
 
     # Match to existing shipment
@@ -148,6 +154,16 @@ def is_variable_token(token: str) -> bool:
     if re.match(r'\d{1,4}[/\-\.]\d{1,2}', token):
         return True
     return False
+
+
+def normalize_tracking_link(current_link: str | None, tracking_number: str, carrier: str | None) -> str:
+    """Return a persistent public tracking URL for known carriers."""
+    c = (carrier or "").lower()
+    if "dhl" in c or (current_link and "dhl" in current_link):
+        return f"https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode={tracking_number}"
+    if "hermes" in c or (current_link and "hermes" in current_link):
+        return f"https://www.myhermes.de/empfangen/sendungsverfolgung/sendungsinformation/#{tracking_number}"
+    return current_link or f"https://parcelsapp.com/en/tracking/{tracking_number}"
 
 
 def extract_merchant_from_subject(subject: str) -> str | None:
