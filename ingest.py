@@ -56,6 +56,10 @@ def process_email(email: dict) -> dict:
                 else:
                     db.create_parser(domain, keywords, field_map)
 
+    # Auto-detect carrier from sender domain if not set
+    if not extracted.get("carrier"):
+        extracted["carrier"] = detect_carrier_from_domain(domain)
+
     # Override title with product_name if provided
     if email.get("product_name"):
         extracted["title"] = email["product_name"]
@@ -165,6 +169,25 @@ def is_variable_token(token: str) -> bool:
     if re.match(r'\d{1,4}[/\-\.]\d{1,2}', token):
         return True
     return False
+
+
+CARRIER_DOMAINS = {
+    "dhl.de": "DHL", "dhl.com": "DHL",
+    "paketankuendigung.myhermes.de": "Hermes", "myhermes.de": "Hermes",
+    "dpd.de": "DPD", "dpd.com": "DPD",
+    "gls-group.eu": "GLS", "gls-pakete.de": "GLS",
+    "ups.com": "UPS",
+    "fedex.com": "FedEx",
+    "amazon.de": "Amazon Logistics", "amazon.com": "Amazon Logistics",
+}
+
+
+def detect_carrier_from_domain(domain: str) -> str | None:
+    """Detect carrier from sender domain."""
+    for pattern, carrier in CARRIER_DOMAINS.items():
+        if domain == pattern or domain.endswith("." + pattern):
+            return carrier
+    return None
 
 
 def normalize_tracking_link(current_link: str | None, tracking_number: str, carrier: str | None) -> str:
