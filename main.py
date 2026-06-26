@@ -25,6 +25,7 @@ class EmailPayload(BaseModel):
     html: str | None = None
     product_name: str | None = None
     message_id: str | None = None
+    date: str | None = None
 
     model_config = {"populate_by_name": True}
 
@@ -36,7 +37,7 @@ def startup():
 
 @app.post("/ingest")
 async def ingest_email(payload: EmailPayload):
-    email = {"from": payload.from_, "subject": payload.subject, "body": payload.body, "html": payload.html, "product_name": payload.product_name, "message_id": payload.message_id}
+    email = {"from": payload.from_, "subject": payload.subject, "body": payload.body, "html": payload.html, "product_name": payload.product_name, "message_id": payload.message_id, "date": payload.date}
     result = process_email(email)
     return result
 

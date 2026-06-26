@@ -94,7 +94,7 @@ def process_email(email: dict) -> dict:
         shipment_id = db.create_shipment(extracted)
         action = "created"
         final_state = status
-    db.add_event(shipment_id, final_state, email["subject"], "email", message_id=msg_id)
+    db.add_event(shipment_id, final_state, email["subject"], "email", message_id=msg_id, occurred_at=email.get("date"))
 
     return {
         "shipment_id": shipment_id,

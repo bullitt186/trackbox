@@ -156,11 +156,11 @@ def delete_shipment(shipment_id: int):
 
 # --- Events ---
 
-def add_event(shipment_id: int, state: str, notes: str, source: str, message_id: str | None = None) -> int:
+def add_event(shipment_id: int, state: str, notes: str, source: str, message_id: str | None = None, occurred_at: str | None = None) -> int:
     conn = get_conn()
     cur = conn.execute(
         "INSERT INTO events (shipment_id, state, notes, source, occurred_at, message_id) VALUES (?, ?, ?, ?, ?, ?)",
-        (shipment_id, state, notes, source, _now(), message_id)
+        (shipment_id, state, notes, source, occurred_at or _now(), message_id)
     )
     conn.commit()
     event_id = cur.lastrowid
