@@ -150,7 +150,7 @@ export default function Parsers() {
         <p className="text-sm text-muted-foreground">
           {parsers.length === 0
             ? "No parsers configured"
-            : `${parsers.length} parser${parsers.length !== 1 ? "s" : ""} · email domain rules for extracting shipment data`}
+            : `${parsers.length} parser${parsers.length !== 1 ? "s" : ""} · email templates for extracting tracking info from incoming emails`}
         </p>
       </div>
 

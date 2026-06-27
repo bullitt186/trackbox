@@ -75,11 +75,11 @@ export default function App() {
       <ThemeApplier />
       <div className="min-h-screen flex bg-background">
         {/* Sidebar — desktop */}
-        <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-border bg-card">
+        <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-border bg-muted/60">
           <div className="flex items-center justify-between px-4 py-4 border-b border-border">
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
-              <span className="font-bold text-lg tracking-tight">Trackbox</span>
+              <span className="font-bold text-lg tracking-tight">trackbox</span>
             </div>
           </div>
           <nav className="flex-1 p-3 space-y-1">

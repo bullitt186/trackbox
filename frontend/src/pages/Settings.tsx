@@ -133,7 +133,7 @@ export default function Settings() {
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Settings</h1>
+        <h1 className="text-xl font-bold">Settings</h1>
         {scraperStatus?.scheduler_running && (
           <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
             Scheduler Running

@@ -21,7 +21,7 @@ const STEPPER_STATES = ["preparing", "shipped", "in_transit", "out_for_delivery"
 function ProgressStepper({ state }: { state: string }) {
   const currentIdx = STEPPER_STATES.indexOf(state as typeof STEPPER_STATES[number])
   return (
-    <div className="flex items-center gap-0">
+    <div className="flex items-center gap-0 bg-muted/40 rounded-xl px-4 py-3">
       {STEPPER_STATES.map((s, i) => {
         const done = currentIdx >= i
         const current = currentIdx === i
@@ -38,7 +38,7 @@ function ProgressStepper({ state }: { state: string }) {
                   current && "ring-2 ring-primary ring-offset-2 ring-offset-background"
                 )}
               >
-                {done ? "✓" : i + 1}
+                {done ? "✓" : ""}
               </div>
               <span className={cn(
                 "text-[10px] mt-1 text-center leading-tight w-14 hidden sm:block",

@@ -10,6 +10,17 @@ import { fetchShipments, archiveShipment, type Shipment } from "@/lib/api"
 import { relativeTime, cn, STATE_LABELS, STATES } from "@/lib/utils"
 import { CarrierIcon } from "@/components/CarrierIcon"
 
+const STATUS_ACCENT: Record<string, string> = {
+  delivered:        "border-l-green-500",
+  in_transit:       "border-l-blue-500",
+  shipped:          "border-l-blue-400",
+  out_for_delivery: "border-l-sky-500",
+  delayed:          "border-l-amber-500",
+  exception:        "border-l-red-500",
+  preparing:        "border-l-slate-400",
+  unknown:          "border-l-violet-400",
+}
+
 type SortField = "added" | "updated" | "name" | "carrier"
 type SortDir = "asc" | "desc"
 
@@ -44,7 +55,10 @@ function ShipmentCard({ shipment, onArchive, onUnarchive, isArchiving = false }:
   return (
     <div className={isArchiving ? "animate-archive-out" : undefined}>
     <Link to={`/shipments/${shipment.id}`}>
-      <Card className="group hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
+      <Card className={cn(
+        "group hover:shadow-md transition-all cursor-pointer border-l-4",
+        STATUS_ACCENT[shipment.current_state] ?? "border-l-border"
+      )}>
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
@@ -100,7 +114,7 @@ function ShipmentCard({ shipment, onArchive, onUnarchive, isArchiving = false }:
           </div>
           {shipment.last_event?.notes && (
             <p className="text-xs text-muted-foreground mt-2 truncate border-t border-border pt-2">
-              {shipment.last_event.notes}
+              <span className="font-medium">Last update:</span> {shipment.last_event.notes}
             </p>
           )}
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
@@ -143,7 +157,7 @@ function EmptyState() {
       <Package className="h-12 w-12 text-muted-foreground/40 mb-4" />
       <h3 className="font-semibold text-muted-foreground">No shipments yet</h3>
       <p className="text-sm text-muted-foreground mt-1">
-        Shipments will appear here when emails are ingested.
+        Shipments will appear here automatically when tracking emails are ingested.
       </p>
     </div>
   )
