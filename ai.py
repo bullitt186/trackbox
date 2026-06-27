@@ -107,7 +107,8 @@ def extract_and_generate_parser(email: dict) -> tuple[dict | None, dict | None]:
             response_format={"type": "json_object"},
             temperature=0,
         )
-        data = json.loads(response.choices[0].message.content)
+        raw_content = response.choices[0].message.content or ""
+        data = json.loads(raw_content)
     except Exception:
         return None, None
 

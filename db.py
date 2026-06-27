@@ -285,6 +285,7 @@ def create_shipment(fields: dict) -> int:
     conn.commit()
     shipment_id = cur.lastrowid
     conn.close()
+    assert shipment_id is not None, "INSERT did not return a row ID"
     return shipment_id
 
 
@@ -324,6 +325,7 @@ def add_event(shipment_id: int, state: str, notes: str, source: str, message_id:
     conn.commit()
     event_id = cur.lastrowid
     conn.close()
+    assert event_id is not None, "INSERT did not return a row ID"
     return event_id
 
 
@@ -366,6 +368,7 @@ def create_parser(sender_domain: str, subject_keywords: list[str], field_map: di
     conn.commit()
     parser_id = cur.lastrowid
     conn.close()
+    assert parser_id is not None, "INSERT did not return a row ID"
     return parser_id
 
 
@@ -408,6 +411,7 @@ def add_scrape_log(
     conn.commit()
     log_id = cur.lastrowid
     conn.close()
+    assert log_id is not None, "INSERT did not return a row ID"
     return log_id
 
 

@@ -30,14 +30,27 @@ jobs:
           SHA=$(git rev-parse --short HEAD)
           VERSION=$(cat VERSION 2>/dev/null || echo "dev")
 
-          # ── Test (lint + pytest + security) ─────────────────────────────────
-          docker build --target test .
+          # ── Verify lock file is in sync with requirements.txt ─────────────────
+          python3 -m venv /tmp/trackbox-lockcheck
+          /tmp/trackbox-lockcheck/bin/pip install -q --no-cache-dir -r requirements.txt
+          /tmp/trackbox-lockcheck/bin/pip freeze > /tmp/trackbox-freeze.txt
+          if ! diff -u requirements.lock /tmp/trackbox-freeze.txt; then
+            echo "ERROR: requirements.lock is out of sync with requirements.txt. Run 'make lock' to regenerate."
+            exit 1
+          fi
+          rm -rf /tmp/trackbox-lockcheck /tmp/trackbox-freeze.txt
 
-          # ── Build production image ───────────────────────────────────────────
+          # ── Test (lint + pytest + security) — reuse cached layers ────────────
+          BUILDKIT_CACHE_IMAGE="git.stahmer.net/bullitt/trackbox:buildcache"
+          DOCKER_BUILDKIT=1 docker build --target test \
+            --cache-from "type=registry,ref=${BUILDKIT_CACHE_IMAGE}" .
+
+          # ── Build production image — reuse cached layers ──────────────────────
           echo "${REGISTRY_TOKEN}" | docker login git.stahmer.net -u bullitt --password-stdin
           BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          docker build \
+          DOCKER_BUILDKIT=1 docker build \
             --target production \
+            --cache-from "type=registry,ref=${BUILDKIT_CACHE_IMAGE}" \
             --build-arg VERSION="${VERSION}" \
             --build-arg BUILD_TIME="${BUILD_TIME}" \
             -t git.stahmer.net/bullitt/trackbox:${SHA} \
@@ -100,8 +113,10 @@ jobs:
           # ── Post-deploy smoke test ────────────────────────────────────────────
           sleep 25
           SMOKE_OK=0
+          healthy=0
           for i in 1 2 3 4 5; do
             if curl -sf http://192.168.0.50:8900/health > /dev/null 2>&1; then
+              healthy=1
               # Smoke test with a realistic tracking email
               RESULT=$(curl -sf -X POST http://192.168.0.50:8900/ingest \
                 -H "Content-Type: application/json" \
@@ -119,6 +134,7 @@ jobs:
             fi
             sleep 10
           done
+          [ "$healthy" = "1" ] || { echo "ERROR: Health check timed out — container did not become healthy after deploy."; exit 1; }
 
           if [ "${SMOKE_OK}" != "1" ]; then
             echo "Post-deploy health check timed out — service may not be responding."

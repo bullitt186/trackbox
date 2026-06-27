@@ -294,9 +294,9 @@ def extract_tracking_from_url(url: str) -> str | None:
 
 def get_effective_body(email: dict) -> str:
     if email.get("body") and email["body"].strip():
-        return email["body"]
+        return str(email["body"])
     if email.get("html"):
-        return strip_html(email["html"])
+        return strip_html(str(email["html"]))
     return ""
 
 
@@ -317,7 +317,8 @@ def apply_field_map(field_map: dict, body: str, html: str = "") -> dict:
 def apply_strategy(strategy_def: dict, body: str, html: str = "") -> str | None:
     strategy = strategy_def.get("strategy")
     if strategy == "literal":
-        return strategy_def.get("value")
+        value = strategy_def.get("value")
+        return str(value) if value is not None else None
     elif strategy == "after_label":
         label = strategy_def.get("label", "")
         for line in body.splitlines():
@@ -332,10 +333,10 @@ def apply_strategy(strategy_def: dict, body: str, html: str = "") -> str | None:
         # Search both plain text body and raw HTML for URLs
         for url in URL_RE.findall(body):
             if contains in url:
-                return url
+                return str(url)
         for url in URL_RE.findall(html):
             if contains in url:
-                return url
+                return str(url)
         return None
     elif strategy == "none":
         return None

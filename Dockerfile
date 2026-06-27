@@ -9,7 +9,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM base AS test
 RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY . .
-RUN ruff check . && mypy config.py --no-error-summary || true && pytest tests/ -q --cov=ingest --cov-report=term-missing --cov-fail-under=25 && pip-audit --strict --progress-spinner off -r requirements.txt
+RUN ruff check . \
+ && mypy config.py main.py db.py ingest.py --no-error-summary \
+ && pytest tests/ -q --cov=. --cov-report=term-missing --cov-fail-under=18 \
+ && pip-audit --strict --progress-spinner off -r requirements.txt
 
 # Node image pinned to digest for reproducible builds.
 # To update: docker pull node:20-slim && docker inspect --format='{{index .RepoDigests 0}}' node:20-slim
