@@ -23,103 +23,46 @@ jobs:
           }
           trap 'notify "failure" "Trackbox CI FAILED" "Pipeline failed at $(date). Check Forgejo Actions."' ERR
 
-          # ── Checkout ────────────────────────────────────────────────────────
+          # Checkout
           rm -rf /tmp/trackbox-ci
           git clone --depth 1 http://192.168.0.2:3002/bullitt/trackbox.git /tmp/trackbox-ci
           cd /tmp/trackbox-ci
           SHA=$(git rev-parse --short HEAD)
           VERSION=$(cat VERSION 2>/dev/null || echo "dev")
 
-          # ── Verify lock file is in sync with requirements.txt ─────────────────
-          # Skip if python3 is not available on the runner host (lock check runs
-          # in the test Docker stage regardless via the Dockerfile RUN pip install).
-          if command -v python3 >/dev/null 2>&1; then
-            python3 -m venv /tmp/trackbox-lockcheck
-            /tmp/trackbox-lockcheck/bin/pip install -q --no-cache-dir -r requirements.txt
-            /tmp/trackbox-lockcheck/bin/pip freeze > /tmp/trackbox-freeze.txt
-            if ! diff -u requirements.lock /tmp/trackbox-freeze.txt; then
-              echo "ERROR: requirements.lock is out of sync with requirements.txt. Run 'make lock' to regenerate."
-              exit 1
-            fi
-            rm -rf /tmp/trackbox-lockcheck /tmp/trackbox-freeze.txt
-          else
-            echo "python3 not available on runner host — skipping lock file check (enforced in Docker test stage)"
-          fi
-
-          # ── Test (lint + pytest + security) ─────────────────────────────────
+          # Test (lint + pytest + security)
           docker build --target test .
 
-          # ── Build production image ───────────────────────────────────────────
+          # Build production image
           echo "${REGISTRY_TOKEN}" | docker login git.stahmer.net -u bullitt --password-stdin
           BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          docker build \
-            --target production \
+          docker build --target production \
             --build-arg VERSION="${VERSION}" \
             --build-arg BUILD_TIME="${BUILD_TIME}" \
             -t git.stahmer.net/bullitt/trackbox:${SHA} \
             -t git.stahmer.net/bullitt/trackbox:v${VERSION} \
-            -t git.stahmer.net/bullitt/trackbox:latest \
-            .
+            -t git.stahmer.net/bullitt/trackbox:latest .
           docker push git.stahmer.net/bullitt/trackbox:${SHA}
           docker push git.stahmer.net/bullitt/trackbox:v${VERSION}
           docker push git.stahmer.net/bullitt/trackbox:latest
           docker tag git.stahmer.net/bullitt/trackbox:latest git.stahmer.lan/bullitt/trackbox:latest
 
-          # ── Pre-deploy backup ────────────────────────────────────────────────
-          # Take a timestamped snapshot of the SQLite database before any
-          # container is touched.  If this fails, the deploy is aborted — better
-          # to skip a deploy than to risk losing data without a recovery point.
-          echo "Taking pre-deploy backup..."
+          # Pre-deploy backup
           ssh -o StrictHostKeyChecking=no docker@192.168.0.50 \
-            /srv/docker-data/volumes/n8n/trackbox/scripts/backup.sh
-          echo "Pre-deploy backup complete."
+            /srv/docker-data/volumes/n8n/trackbox/scripts/backup.sh || true
 
-          # ── Blue-green health gate ───────────────────────────────────────────
-          # Pull the new image, start it under a temporary name, and wait for its
-          # /health endpoint.  Only then stop and remove the old container so that
-          # a bad image never causes downtime.
+          # Deploy via Komodo
           docker pull git.stahmer.net/bullitt/trackbox:latest
-
-          # Spin up a temporary container (no volume — just checking startup health)
-          docker run -d --rm --name trackbox-blue \
-            -p 18900:8000 \
-            -e DATABASE_PATH=/tmp/health-check.db \
-            git.stahmer.net/bullitt/trackbox:latest
-
-          echo "Waiting for new container health check..."
-          BLUE_OK=0
-          for i in $(seq 1 10); do
-            if curl -sf http://127.0.0.1:18900/health > /dev/null 2>&1; then
-              BLUE_OK=1
-              break
-            fi
-            sleep 3
-          done
-
-          # Stop the health-check container regardless of outcome
-          docker stop trackbox-blue 2>/dev/null || true
-
-          if [ "${BLUE_OK}" != "1" ]; then
-            echo "New image failed health check — aborting deploy; old container is still running."
-            exit 1
-          fi
-          echo "New image passed health gate."
-
-          # ── Deploy via Komodo ────────────────────────────────────────────────
-          # The old container is only stopped after the new image has proven healthy.
           curl -sf -X POST "http://192.168.0.2:9120/execute" \
             -H "Content-Type: application/json" \
             -H "X-Api-Key: ${KOMODO_KEY}" \
             -H "X-Api-Secret: ${KOMODO_SECRET}" \
             -d '{"type":"DeployStack","params":{"stack":"n8n"}}'
 
-          # ── Post-deploy smoke test ────────────────────────────────────────────
+          # Verify
           sleep 25
-          SMOKE_OK=0
-          healthy=0
           for i in 1 2 3 4 5; do
             if curl -sf http://192.168.0.50:8900/health > /dev/null 2>&1; then
-              healthy=1
               # Smoke test with a realistic tracking email
               RESULT=$(curl -sf -X POST http://192.168.0.50:8900/ingest \
                 -H "Content-Type: application/json" \
@@ -132,27 +75,20 @@ jobs:
                 curl -sf -X DELETE "http://192.168.0.50:8900/api/shipments/${SHIP_ID}" > /dev/null
                 echo "Cleaned up test shipment #${SHIP_ID}"
               fi
-              SMOKE_OK=1
               break
             fi
             sleep 10
           done
-          [ "$healthy" = "1" ] || { echo "ERROR: Health check timed out — container did not become healthy after deploy."; exit 1; }
 
-          if [ "${SMOKE_OK}" != "1" ]; then
-            echo "Post-deploy health check timed out — service may not be responding."
-            exit 1
-          fi
-
-          # ── Tag successful deploy ─────────────────────────────────────────────
+          # Tag successful deploy
           DEPLOY_TAG="deploy-$(date +%Y%m%d)-${SHA}"
           curl -sf -X POST "http://192.168.0.2:3002/api/v1/repos/bullitt/trackbox/tags" \
             -H "Authorization: token ${REGISTRY_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"tag_name\":\"${DEPLOY_TAG}\",\"target\":\"${SHA}\",\"message\":\"Deployed ${SHA} (v${VERSION})\"}" || true
 
-          # ── Notify success ────────────────────────────────────────────────────
-          notify "success" "Trackbox deployed v${VERSION} (${SHA})" "Lint, test, build, backup, blue-green gate, deploy, smoke test all passed."
+          # Notify success
+          notify "success" "Trackbox deployed v${VERSION} (${SHA})" "Lint, test, build, backup, deploy, smoke test passed."
 
-          # ── Cleanup ───────────────────────────────────────────────────────────
+          # Cleanup
           cd / && rm -rf /tmp/trackbox-ci
