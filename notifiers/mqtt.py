@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import sys
+from typing import Any
 
 import config
 import db
@@ -114,7 +115,7 @@ class MQTTNotifier:
     """Publishes Trackbox state to an MQTT broker as HA autodiscovery sensors."""
 
     def __init__(self) -> None:
-        self._client = None
+        self._client: Any = None
         self._task: asyncio.Task | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._connected = False

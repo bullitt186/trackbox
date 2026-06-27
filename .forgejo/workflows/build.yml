@@ -29,31 +29,54 @@ jobs:
           cd /tmp/trackbox-ci
           SHA=$(git rev-parse --short HEAD)
 
-          # Test (lint + pytest + security)
-          docker build --target test .
+          # Verify requirements.lock is in sync with requirements.txt
+          # (Install unpinned deps in a temp venv, freeze, diff against the lock file)
+          python3 -m venv /tmp/trackbox-lockcheck
+          /tmp/trackbox-lockcheck/bin/pip install -q --no-cache-dir -r requirements.txt
+          /tmp/trackbox-lockcheck/bin/pip freeze > /tmp/trackbox-freeze.txt
+          if ! diff -u requirements.lock /tmp/trackbox-freeze.txt; then
+            echo "ERROR: requirements.lock is out of sync with requirements.txt. Run 'make lock' to regenerate."
+            exit 1
+          fi
+          rm -rf /tmp/trackbox-lockcheck /tmp/trackbox-freeze.txt
 
-          # Build production image
+          # Test (lint + pytest + security) — reuse cached layers when available
+          BUILDKIT_CACHE_IMAGE="git.stahmer.net/bullitt/trackbox:buildcache"
+          DOCKER_BUILDKIT=1 docker build --target test \
+            --cache-from "type=registry,ref=${BUILDKIT_CACHE_IMAGE}" .
+
+          # Build production image — reuse cached layers
           echo "${REGISTRY_TOKEN}" | docker login git.stahmer.net -u bullitt --password-stdin
-          docker build --target production --build-arg VERSION=${SHA} --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) -t git.stahmer.net/bullitt/trackbox:${SHA} .
+          DOCKER_BUILDKIT=1 docker build --target production \
+            --cache-from "type=registry,ref=${BUILDKIT_CACHE_IMAGE}" \
+            --build-arg VERSION=${SHA} \
+            --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            -t git.stahmer.net/bullitt/trackbox:${SHA} .
           docker tag git.stahmer.net/bullitt/trackbox:${SHA} git.stahmer.net/bullitt/trackbox:latest
           docker push git.stahmer.net/bullitt/trackbox:${SHA}
           docker push git.stahmer.net/bullitt/trackbox:latest
           docker tag git.stahmer.net/bullitt/trackbox:latest git.stahmer.lan/bullitt/trackbox:latest
 
-          # Deploy
+          # Pre-deploy backup — snapshot the database before any container change
+          ssh -o StrictHostKeyChecking=no docker@192.168.0.50 /srv/scripts/backup.sh
+          echo "Pre-deploy backup complete."
+
+          # Deploy — Komodo exclusively owns the container lifecycle (no manual stop/rm)
+          # Pulling the new image first means Komodo can restart the container with it
+          # immediately, minimising the unavailability window.
           docker pull git.stahmer.net/bullitt/trackbox:latest
-          docker stop trackbox 2>/dev/null || true
-          docker rm trackbox 2>/dev/null || true
           curl -sf -X POST "http://192.168.0.2:9120/execute" \
             -H "Content-Type: application/json" \
             -H "X-Api-Key: ${KOMODO_KEY}" \
             -H "X-Api-Secret: ${KOMODO_SECRET}" \
             -d '{"type":"DeployStack","params":{"stack":"n8n"}}'
 
-          # Verify
+          # Verify — fail the pipeline if the container never becomes healthy
           sleep 25
+          healthy=0
           for i in 1 2 3 4 5; do
             if curl -sf http://192.168.0.50:8900/health > /dev/null 2>&1; then
+              healthy=1
               # Smoke test with a realistic tracking email
               RESULT=$(curl -sf -X POST http://192.168.0.50:8900/ingest \
                 -H "Content-Type: application/json" \
@@ -70,6 +93,7 @@ jobs:
             fi
             sleep 10
           done
+          [ "$healthy" = "1" ] || { echo "ERROR: Health check timed out — container did not become healthy after deploy."; exit 1; }
 
           # Tag successful deploy
           TAG="deploy-$(date +%Y%m%d)-${SHA}"

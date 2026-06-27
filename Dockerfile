@@ -6,7 +6,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM base AS test
 RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY . .
-RUN ruff check . && mypy config.py --no-error-summary || true && pytest tests/ -q --cov=ingest --cov-report=term-missing --cov-fail-under=25 && pip-audit --strict --progress-spinner off -r requirements.txt
+RUN ruff check . \
+ && mypy config.py main.py db.py ingest.py --no-error-summary \
+ && pytest tests/ -q --cov=. --cov-report=term-missing --cov-fail-under=18 \
+ && pip-audit --strict --progress-spinner off -r requirements.txt
 
 FROM node:20-slim AS frontend-build
 WORKDIR /frontend

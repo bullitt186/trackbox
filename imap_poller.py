@@ -41,7 +41,7 @@ def _get_body(msg: email_lib.message.Message) -> tuple[str, str | None]:
             payload = part.get_payload(decode=True)
             if payload is None:
                 continue
-            text = payload.decode(charset, errors="replace")
+            text = payload.decode(charset, errors="replace")  # type: ignore[union-attr]
             if ct == "text/plain" and not plain:
                 plain = text
             elif ct == "text/html" and html is None:
@@ -50,7 +50,7 @@ def _get_body(msg: email_lib.message.Message) -> tuple[str, str | None]:
         charset = msg.get_content_charset() or "utf-8"
         payload = msg.get_payload(decode=True)
         if payload:
-            text = payload.decode(charset, errors="replace")
+            text = payload.decode(charset, errors="replace")  # type: ignore[union-attr]
             if msg.get_content_type() == "text/html":
                 html = text
             else:
@@ -59,6 +59,7 @@ def _get_body(msg: email_lib.message.Message) -> tuple[str, str | None]:
 
 
 def _connect() -> imaplib.IMAP4 | imaplib.IMAP4_SSL:
+    conn: imaplib.IMAP4 | imaplib.IMAP4_SSL
     if config.IMAP_SSL:
         conn = imaplib.IMAP4_SSL(config.IMAP_HOST, config.IMAP_PORT)
     else:
@@ -77,15 +78,15 @@ def _ensure_folder(conn: imaplib.IMAP4 | imaplib.IMAP4_SSL, folder: str) -> None
 
 def _move_message(conn: imaplib.IMAP4 | imaplib.IMAP4_SSL, uid: bytes, dest: str) -> None:
     """Mark as seen and move message to dest folder."""
-    conn.uid("store", uid, "+FLAGS", r"(\Seen)")
+    conn.uid("store", uid, "+FLAGS", r"(\Seen)")  # type: ignore[arg-type]
     # Try MOVE (RFC 6851), fall back to COPY + STORE deleted
     try:
-        status, _ = conn.uid("move", uid, dest)
+        status, _ = conn.uid("move", uid, dest)  # type: ignore[arg-type]
         if status != "OK":
             raise imaplib.IMAP4.error("MOVE not supported")
     except (imaplib.IMAP4.error, Exception):
-        conn.uid("copy", uid, dest)
-        conn.uid("store", uid, "+FLAGS", r"(\Deleted)")
+        conn.uid("copy", uid, dest)  # type: ignore[arg-type]
+        conn.uid("store", uid, "+FLAGS", r"(\Deleted)")  # type: ignore[arg-type]
         conn.expunge()
 
 
@@ -150,7 +151,7 @@ class IMAPPoller:
         try:
             _ensure_folder(conn, config.IMAP_DONE_FOLDER)
             conn.select(config.IMAP_FOLDER)
-            status, data = conn.uid("search", None, "UNSEEN")
+            status, data = conn.uid("search", None, "UNSEEN")  # type: ignore[arg-type]
             if status != "OK" or not data[0]:
                 return
             uids = data[0].split()
@@ -167,7 +168,7 @@ class IMAPPoller:
                 pass
 
     def _process_one(self, conn: imaplib.IMAP4 | imaplib.IMAP4_SSL, uid: bytes) -> None:
-        status, data = conn.uid("fetch", uid, "(RFC822)")
+        status, data = conn.uid("fetch", uid, "(RFC822)")  # type: ignore[arg-type]
         if status != "OK" or not data or data[0] is None:
             return
 
