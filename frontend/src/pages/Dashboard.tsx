@@ -1,12 +1,17 @@
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { Link } from "react-router-dom"
-import { ExternalLink, Copy, Check, RefreshCw, ChevronDown, Package, Archive, ArchiveRestore } from "lucide-react"
+import { ExternalLink, Copy, Check, RefreshCw, ChevronDown, Package, Archive, ArchiveRestore, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StateBadge } from "@/components/StateBadge"
 import { fetchShipments, archiveShipment, type Shipment } from "@/lib/api"
-import { relativeTime, cn } from "@/lib/utils"
+import { relativeTime, cn, STATE_LABELS, STATES } from "@/lib/utils"
 import { CarrierIcon } from "@/components/CarrierIcon"
+
+type SortField = "added" | "updated" | "name" | "carrier"
+type SortDir = "asc" | "desc"
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -144,6 +149,19 @@ function EmptyState() {
   )
 }
 
+function NoMatches() {
+  return <p className="text-sm text-muted-foreground py-2">No matches</p>
+}
+
+function sortKey(s: Shipment, field: SortField): string {
+  switch (field) {
+    case "added":   return s.first_seen_at ?? ""
+    case "updated": return s.last_updated_at ?? ""
+    case "name":    return (s.title ?? "￿").toLowerCase()
+    case "carrier": return (s.carrier ?? "￿").toLowerCase()
+  }
+}
+
 export default function Dashboard() {
   const [active, setActive] = useState<Shipment[]>([])
   const [delivered, setDelivered] = useState<Shipment[]>([])
@@ -154,6 +172,12 @@ export default function Dashboard() {
   const [showArchived, setShowArchived] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
   const [archivingIds, setArchivingIds] = useState<Set<number>>(new Set())
+
+  const [search, setSearch] = useState("")
+  const [filterCarrier, setFilterCarrier] = useState("all")
+  const [filterStatus, setFilterStatus] = useState("all")
+  const [sortField, setSortField] = useState<SortField>("added")
+  const [sortDir, setSortDir] = useState<SortDir>("desc")
 
   const load = useCallback(async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true)
@@ -192,6 +216,52 @@ export default function Dashboard() {
     load()
   }
 
+  const allShipments = useMemo(() => [...active, ...delivered, ...archived], [active, delivered, archived])
+
+  const carrierOptions = useMemo(() => {
+    const seen = new Set<string>()
+    for (const s of allShipments) {
+      if (s.carrier) seen.add(s.carrier)
+    }
+    return Array.from(seen).sort()
+  }, [allShipments])
+
+  const isFiltered = search !== "" || filterCarrier !== "all" || filterStatus !== "all"
+
+  const filterAndSort = useCallback((shipments: Shipment[]) => {
+    const q = search.toLowerCase()
+    let result = shipments.filter(s => {
+      if (filterCarrier !== "all" && s.carrier !== filterCarrier) return false
+      if (filterStatus !== "all" && s.current_state !== filterStatus) return false
+      if (q) {
+        const haystack = [
+          s.title,
+          s.carrier,
+          STATE_LABELS[s.current_state] ?? s.current_state,
+          s.first_seen_at,
+          s.last_updated_at,
+          s.last_event?.notes,
+          s.tracking_number,
+        ].filter(Boolean).join(" ").toLowerCase()
+        if (!haystack.includes(q)) return false
+      }
+      return true
+    })
+    result = [...result].sort((a, b) => {
+      const ka = sortKey(a, sortField)
+      const kb = sortKey(b, sortField)
+      const cmp = sortField === "name" || sortField === "carrier"
+        ? ka.localeCompare(kb)
+        : ka < kb ? -1 : ka > kb ? 1 : 0
+      return sortDir === "asc" ? cmp : -cmp
+    })
+    return result
+  }, [search, filterCarrier, filterStatus, sortField, sortDir])
+
+  const filteredActive = useMemo(() => filterAndSort(active), [filterAndSort, active])
+  const filteredDelivered = useMemo(() => filterAndSort(delivered), [filterAndSort, delivered])
+  const filteredArchived = useMemo(() => filterAndSort(archived), [filterAndSort, archived])
+
   const total = active.length + delivered.length
 
   if (loading) {
@@ -206,9 +276,11 @@ export default function Dashboard() {
     )
   }
 
+  const SortDirIcon = sortDir === "asc" ? ArrowUp : sortDir === "desc" ? ArrowDown : ArrowUpDown
+
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-bold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
@@ -229,6 +301,63 @@ export default function Dashboard() {
         </Button>
       </div>
 
+      {/* Filter / sort bar */}
+      {(total > 0 || archived.length > 0) && (
+        <div className="flex flex-wrap gap-2 mb-6">
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8 h-9 text-sm"
+            />
+          </div>
+          <Select value={filterCarrier} onValueChange={setFilterCarrier}>
+            <SelectTrigger className="w-[140px] h-9 text-sm">
+              <SelectValue placeholder="Carrier" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All carriers</SelectItem>
+              {carrierOptions.map(c => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[140px] h-9 text-sm">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {STATES.map(s => (
+                <SelectItem key={s} value={s}>{STATE_LABELS[s]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sortField} onValueChange={v => setSortField(v as SortField)}>
+            <SelectTrigger className="w-[130px] h-9 text-sm">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="added">Added</SelectItem>
+              <SelectItem value="updated">Updated</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="carrier">Carrier</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => setSortDir((d: SortDir) => d === "asc" ? "desc" : "asc")}
+            title={sortDir === "asc" ? "Ascending" : "Descending"}
+          >
+            <SortDirIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {total === 0 && archived.length === 0 ? (
         <EmptyState />
       ) : (
@@ -236,13 +365,15 @@ export default function Dashboard() {
           {active.length > 0 && (
             <section className="mb-8">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Active ({active.length})
+                Active ({isFiltered ? `${filteredActive.length}/` : ""}{active.length})
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {active.map(s => (
-                  <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
-                ))}
-              </div>
+              {filteredActive.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredActive.map(s => (
+                    <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
+                  ))}
+                </div>
+              ) : <NoMatches />}
             </section>
           )}
 
@@ -253,14 +384,16 @@ export default function Dashboard() {
                 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 hover:text-foreground transition-colors"
               >
                 <ChevronDown className={cn("h-4 w-4 transition-transform", showDelivered && "rotate-180")} />
-                Delivered ({delivered.length})
+                Delivered ({isFiltered ? `${filteredDelivered.length}/` : ""}{delivered.length})
               </button>
               {showDelivered && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {delivered.map(s => (
-                    <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
-                  ))}
-                </div>
+                filteredDelivered.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredDelivered.map(s => (
+                      <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
+                    ))}
+                  </div>
+                ) : <NoMatches />
               )}
             </section>
           )}
@@ -273,14 +406,16 @@ export default function Dashboard() {
               >
                 <ChevronDown className={cn("h-4 w-4 transition-transform", showArchived && "rotate-180")} />
                 <Archive className="h-3.5 w-3.5" />
-                Archived ({archived.length})
+                Archived ({isFiltered ? `${filteredArchived.length}/` : ""}{archived.length})
               </button>
               {showArchived && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {archived.map(s => (
-                    <ShipmentCard key={s.id} shipment={s} onUnarchive={handleUnarchive} />
-                  ))}
-                </div>
+                filteredArchived.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredArchived.map(s => (
+                      <ShipmentCard key={s.id} shipment={s} onUnarchive={handleUnarchive} />
+                    ))}
+                  </div>
+                ) : <NoMatches />
               )}
             </section>
           )}
