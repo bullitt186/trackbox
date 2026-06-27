@@ -8,27 +8,27 @@ jobs:
   build:
     runs-on: docker-build
     steps:
-      - name: Test
+      - name: Checkout
         run: |
-          set -ex
           rm -rf /tmp/trackbox-ci
           git clone --depth 1 http://192.168.0.2:3002/bullitt/trackbox.git /tmp/trackbox-ci
-          cd /tmp/trackbox-ci
-          pip install --quiet -r requirements.txt -r requirements-dev.txt
-          pytest tests/ -q
+
+      - name: Test (via Docker)
+        run: |
+          docker run --rm -v /tmp/trackbox-ci:/app -w /app python:3.12-slim sh -c \
+            "pip install --quiet -r requirements.txt -r requirements-dev.txt && pytest tests/ -q"
 
       - name: Build and push image
         env:
           REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
         run: |
           set -ex
-          cd /tmp/trackbox-ci
           echo "${REGISTRY_TOKEN}" | docker login git.stahmer.net -u bullitt --password-stdin
-          docker build -t git.stahmer.net/bullitt/trackbox:latest .
+          docker build -t git.stahmer.net/bullitt/trackbox:latest /tmp/trackbox-ci
           docker push git.stahmer.net/bullitt/trackbox:latest
           docker tag git.stahmer.net/bullitt/trackbox:latest git.stahmer.lan/bullitt/trackbox:latest
 
-      - name: Deploy to production
+      - name: Deploy
         env:
           KOMODO_KEY: ${{ secrets.KOMODO_KEY }}
           KOMODO_SECRET: ${{ secrets.KOMODO_SECRET }}
@@ -41,7 +41,6 @@ jobs:
             -H "X-Api-Key: ${KOMODO_KEY}" \
             -H "X-Api-Secret: ${KOMODO_SECRET}" \
             -d '{"type":"DeployStack","params":{"stack":"n8n"}}'
-          echo "Deploy triggered"
 
       - name: Cleanup
         run: rm -rf /tmp/trackbox-ci
