@@ -47,9 +47,9 @@
         <dt>Tracking Link</dt>
         <dd>{% if shipment.tracking_link %}<a href="{{ shipment.tracking_link }}" target="_blank" style="display:inline-block;padding:0.3rem 0.8rem;background:#0066cc;color:white;border-radius:4px;text-decoration:none;font-size:0.85rem">Track Package ↗</a>{% else %}—{% endif %}</dd>
         <dt>First Seen</dt>
-        <dd>{{ shipment.first_seen_at[:16] if shipment.first_seen_at else "—" }}</dd>
+        <dd>{% if shipment.first_seen_at %}<time datetime="{{ shipment.first_seen_at }}">{{ shipment.first_seen_at[:16] }}</time>{% else %}—{% endif %}</dd>
         <dt>Last Updated</dt>
-        <dd>{{ shipment.last_updated_at[:16] if shipment.last_updated_at else "—" }}</dd>
+        <dd>{% if shipment.last_updated_at %}<time datetime="{{ shipment.last_updated_at }}">{{ shipment.last_updated_at[:16] }}</time>{% else %}—{% endif %}</dd>
     </dl>
 
     <form method="post" action="/shipments/{{ shipment.id }}/state">
@@ -80,7 +80,7 @@
                 <td><span class="state state-{{ e.state }}">{{ state_labels.get(e.state, e.state) }}</span></td>
                 <td>{{ e.notes or "—" }}</td>
                 <td>{{ e.source }}</td>
-                <td>{{ e.occurred_at[:16] if e.occurred_at else "—" }}</td>
+                <td>{% if e.occurred_at %}<time datetime="{{ e.occurred_at }}">{{ e.occurred_at[:16] }}</time>{% else %}—{% endif %}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -92,5 +92,18 @@
     <form class="delete-form" method="post" action="/shipments/{{ shipment.id }}/delete" onsubmit="return confirm('Delete this shipment?')">
         <button type="submit">Delete Shipment</button>
     </form>
+<script>
+document.querySelectorAll('time[datetime]').forEach(el => {
+    const d = new Date(el.getAttribute('datetime'));
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) el.textContent = 'just now';
+    else if (diff < 3600) el.textContent = Math.floor(diff/60) + 'm ago';
+    else if (diff < 86400) el.textContent = Math.floor(diff/3600) + 'h ago';
+    else if (diff < 172800) el.textContent = 'yesterday';
+    else if (diff < 604800) el.textContent = Math.floor(diff/86400) + 'd ago';
+    else el.textContent = d.toLocaleDateString();
+});
+</script>
 </body>
 </html>

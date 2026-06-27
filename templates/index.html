@@ -47,7 +47,7 @@
                 <td>{{ s.carrier or "—" }}</td>
                 <td><span class="state state-{{ s.current_state }}">{{ state_labels.get(s.current_state, s.current_state) }}</span></td>
                 <td>{% if s.tracking_link %}<a href="{{ s.tracking_link }}" target="_blank" style="font-size:0.8rem">Track ↗</a>{% endif %}</td>
-                <td>{{ s.last_updated_at[:16] if s.last_updated_at else "—" }}</td>
+                <td>{% if s.last_updated_at %}<time datetime="{{ s.last_updated_at }}">{{ s.last_updated_at[:16] }}</time>{% else %}—{% endif %}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -70,7 +70,7 @@
                 <tr>
                     <td><a href="/shipments/{{ s.id }}">{{ s.title or s.order_number or s.tracking_number or "Shipment #" ~ s.id }}</a></td>
                     <td>{{ s.carrier or "—" }}</td>
-                    <td>{{ s.last_updated_at[:16] if s.last_updated_at else "—" }}</td>
+                    <td>{% if s.last_updated_at %}<time datetime="{{ s.last_updated_at }}">{{ s.last_updated_at[:16] }}</time>{% else %}—{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -81,5 +81,18 @@
     {% if not shipments %}
     <p class="empty">No shipments yet. POST an email to /ingest to get started.</p>
     {% endif %}
+<script>
+document.querySelectorAll('time[datetime]').forEach(el => {
+    const d = new Date(el.getAttribute('datetime'));
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) el.textContent = 'just now';
+    else if (diff < 3600) el.textContent = Math.floor(diff/60) + 'm ago';
+    else if (diff < 86400) el.textContent = Math.floor(diff/3600) + 'h ago';
+    else if (diff < 172800) el.textContent = 'yesterday';
+    else if (diff < 604800) el.textContent = Math.floor(diff/86400) + 'd ago';
+    else el.textContent = d.toLocaleDateString();
+});
+</script>
 </body>
 </html>
