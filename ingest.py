@@ -128,6 +128,10 @@ def process_email(email: dict) -> dict:
         new_title = extracted.get("title")
         if new_title and (not shipment.get("title") or len(new_title) > len(shipment["title"])):
             updates["title"] = new_title
+        # estimated_delivery: update if we have a new one and none is stored yet
+        new_eta = extracted.get("estimated_delivery")
+        if new_eta and not shipment.get("estimated_delivery"):
+            updates["estimated_delivery"] = new_eta
         if should_update_state(shipment["current_state"], status):
             updates["current_state"] = status
         if updates:

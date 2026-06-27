@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { StateBadge } from "@/components/StateBadge"
 import { ScrapeStatusIcon } from "@/components/ScrapeStatusIcon"
 import { fetchShipment, updateShipment, archiveShipment, deleteShipment, fetchScrapeLog, type Shipment, type ShipmentEvent, type ScrapeLogEntry } from "@/lib/api"
-import { smartDate, STATE_LABELS, STATES, cn } from "@/lib/utils"
+import { smartDate, STATE_LABELS, STATES, cn, etaLabel } from "@/lib/utils"
 import { CarrierIcon } from "@/components/CarrierIcon"
 
 // Progress stepper state order
@@ -424,6 +424,21 @@ export default function ShipmentDetail() {
             <MetaRow label="Order Number" value={shipment.order_number} />
             <MetaRow label="First Seen" value={smartDate(shipment.first_seen_at)} />
             <MetaRow label="Last carrier update" value={smartDate(shipment.last_updated_at)} />
+            {shipment.estimated_delivery && (() => {
+              const label = etaLabel(shipment.estimated_delivery)
+              const isArrivingSoon = label === "Arriving today" || label === "Arriving tomorrow"
+              return (
+                <div>
+                  <dt className="text-xs text-muted-foreground">Estimated Delivery</dt>
+                  <dd className={cn(
+                    "text-sm font-medium mt-0.5",
+                    isArrivingSoon ? "text-amber-600 dark:text-amber-400" : undefined
+                  )}>
+                    {label || smartDate(shipment.estimated_delivery)}
+                  </dd>
+                </div>
+              )
+            })()}
             {shipment.tracking_number && (
               <div className="col-span-2">
                 <dt className="text-xs text-muted-foreground">Tracking Number</dt>

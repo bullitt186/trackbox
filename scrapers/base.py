@@ -14,6 +14,7 @@ class ScraperResult:
     description: str  # human-readable status text
     events: list[dict] = field(default_factory=list)  # [{date, status, description, location}]
     raw: dict = field(default_factory=dict)  # raw API response for debugging
+    estimated_delivery: str | None = None  # ISO date string YYYY-MM-DD or None
 
 
 class BaseScraper(ABC):

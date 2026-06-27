@@ -118,9 +118,6 @@ def init_db() -> None:
     """)
 
     # Seed baseline row for the very first migration that pre-dated the runner.
-    # If it already exists (pre-runner schema), leave it alone.  If it doesn't,
-    # record it as already applied so the runner below won't try to re-add the
-    # column to a schema that already has it.
     conn.execute(
         """
         INSERT OR IGNORE INTO _migrations (name, applied_at)
@@ -148,31 +145,12 @@ def init_db() -> None:
     # To add a new migration: append a _run_migration() call below.
     # Never modify or reorder existing entries.
 
-    _run_migration(
-        conn,
-        "add_message_id",
-        "ALTER TABLE events ADD COLUMN message_id TEXT",
-    )
-    _run_migration(
-        conn,
-        "add_scrape_enabled",
-        "ALTER TABLE shipments ADD COLUMN scrape_enabled INTEGER DEFAULT 1",
-    )
-    _run_migration(
-        conn,
-        "add_scrape_fail_count",
-        "ALTER TABLE shipments ADD COLUMN scrape_fail_count INTEGER DEFAULT 0",
-    )
-    _run_migration(
-        conn,
-        "add_last_scraped_at",
-        "ALTER TABLE shipments ADD COLUMN last_scraped_at TEXT",
-    )
-    _run_migration(
-        conn,
-        "add_archived",
-        "ALTER TABLE shipments ADD COLUMN archived INTEGER DEFAULT 0",
-    )
+    _run_migration(conn, "add_message_id", "ALTER TABLE events ADD COLUMN message_id TEXT")
+    _run_migration(conn, "add_scrape_enabled", "ALTER TABLE shipments ADD COLUMN scrape_enabled INTEGER DEFAULT 1")
+    _run_migration(conn, "add_scrape_fail_count", "ALTER TABLE shipments ADD COLUMN scrape_fail_count INTEGER DEFAULT 0")
+    _run_migration(conn, "add_last_scraped_at", "ALTER TABLE shipments ADD COLUMN last_scraped_at TEXT")
+    _run_migration(conn, "add_archived", "ALTER TABLE shipments ADD COLUMN archived INTEGER DEFAULT 0")
+    _run_migration(conn, "add_estimated_delivery", "ALTER TABLE shipments ADD COLUMN estimated_delivery TEXT")
 
     # Data-fix migration: ensure current_state = 'delivered' whenever the most
     # recent event says delivered but the shipment row hasn't been updated yet.
@@ -270,8 +248,8 @@ def create_shipment(fields: dict) -> int:
     conn = get_conn()
     cur = conn.execute(
         """INSERT INTO shipments (title, tracking_number, order_number, carrier,
-           tracking_link, current_state, first_seen_at, last_updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+           tracking_link, current_state, first_seen_at, last_updated_at, estimated_delivery)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             fields.get("title"),
             fields.get("tracking_number"),
@@ -279,7 +257,8 @@ def create_shipment(fields: dict) -> int:
             fields.get("carrier"),
             fields.get("tracking_link"),
             fields.get("status", "unknown"),
-            email_date, email_date
+            email_date, email_date,
+            fields.get("estimated_delivery"),
         )
     )
     conn.commit()
@@ -292,7 +271,7 @@ def create_shipment(fields: dict) -> int:
 def update_shipment(shipment_id: int, fields: dict, occurred_at: str | None = None):
     sets = []
     vals = []
-    for key in ("title", "tracking_number", "order_number", "carrier", "tracking_link", "current_state", "archived"):
+    for key in ("title", "tracking_number", "order_number", "carrier", "tracking_link", "current_state", "archived", "estimated_delivery"):
         if key in fields and fields[key] is not None:
             sets.append(f"{key} = ?")
             vals.append(fields[key])

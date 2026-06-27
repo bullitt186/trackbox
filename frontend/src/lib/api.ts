@@ -12,6 +12,7 @@ export interface Shipment {
   current_state: ShipmentState
   first_seen_at: string | null
   last_updated_at: string | null
+  estimated_delivery?: string | null
   last_event?: { state: ShipmentState; notes: string | null; occurred_at: string | null } | null
   events?: ShipmentEvent[]
   scrape_enabled?: number
@@ -59,6 +60,33 @@ export async function updateShipment(id: number, data: Record<string, unknown>):
 
 export async function deleteShipment(id: number): Promise<void> {
   await fetch(`${BASE}/api/shipments/${id}`, { method: "DELETE" })
+}
+
+export interface CreateShipmentInput {
+  tracking_number?: string
+  carrier?: string
+  title?: string
+  order_number?: string
+  tracking_link?: string
+  estimated_delivery?: string
+}
+
+export async function createShipment(data: CreateShipmentInput): Promise<Shipment> {
+  const resp = await fetch(`${BASE}/api/shipments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}))
+    throw new Error(err.detail || `HTTP ${resp.status}`)
+  }
+  return resp.json()
+}
+
+export async function bulkArchiveDelivered(): Promise<{ archived_count: number; archived_ids: number[] }> {
+  const resp = await fetch(`${BASE}/api/shipments/bulk-archive`, { method: "POST" })
+  return resp.json()
 }
 
 export async function fetchParsers(): Promise<Parser[]> {

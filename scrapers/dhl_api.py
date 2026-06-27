@@ -74,6 +74,13 @@ class DHLAPIScraper(BaseScraper):
         status_code = dhl_status.get("statusCode", "unknown")
         description = dhl_status.get("description", dhl_status.get("status", ""))
 
+        # Extract estimated delivery date (DHL API provides estimatedTimeOfDelivery)
+        estimated_delivery: str | None = None
+        eta_raw = shipment.get("estimatedTimeOfDelivery") or shipment.get("estimatedDeliveryTime")
+        if eta_raw:
+            # Trim to YYYY-MM-DD
+            estimated_delivery = str(eta_raw)[:10]
+
         # Parse events
         events: list[dict] = []
         for ev in shipment.get("events", []):
@@ -90,6 +97,7 @@ class DHLAPIScraper(BaseScraper):
             description=description,
             events=events,
             raw=data,
+            estimated_delivery=estimated_delivery,
         )
 
 

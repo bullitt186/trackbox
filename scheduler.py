@@ -252,6 +252,10 @@ class ScraperScheduler:
         conn.commit()
         conn.close()
 
+        # Persist estimated_delivery if the scraper returned one
+        if result.estimated_delivery:
+            db.update_shipment(shipment_id, {"estimated_delivery": result.estimated_delivery})
+
         # Check if state should be updated
         current_state = shipment["current_state"]
         new_state = result.status
@@ -441,6 +445,10 @@ async def scrape_single(shipment_id: int) -> dict:
     )
     conn.commit()
     conn.close()
+
+    # Persist estimated_delivery if the scraper returned one
+    if result.estimated_delivery:
+        db.update_shipment(shipment_id, {"estimated_delivery": result.estimated_delivery})
 
     new_state = result.status
     state_changed = False

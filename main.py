@@ -51,6 +51,7 @@ from ingest import process_email
 from ingest import set_notifier as ingest_set_notifier
 from logging_config import setup_logging
 from notifiers.mqtt import MQTTNotifier
+from notifiers.webhook import WebhookNotifier
 from scheduler import ScraperScheduler, scrape_single
 from scheduler import set_notifier as scheduler_set_notifier
 from scrapers import list_scrapers
@@ -90,8 +91,34 @@ class EmailPayload(BaseModel):
 
 
 mqtt_notifier = MQTTNotifier()
+webhook_notifier = WebhookNotifier()
 scheduler = ScraperScheduler(notifier=mqtt_notifier)
 imap_poller = IMAPPoller()
+
+
+class _CompositeNotifier:
+    """Fan-out notifier: publishes to all registered notifiers."""
+
+    def __init__(self, *notifiers):
+        self._notifiers = notifiers
+
+    async def start(self) -> None:
+        for n in self._notifiers:
+            await n.start()
+
+    async def stop(self) -> None:
+        for n in self._notifiers:
+            await n.stop()
+
+    async def publish(self, event_type: str, payload: dict) -> None:
+        for n in self._notifiers:
+            try:
+                await n.publish(event_type, payload)
+            except Exception:
+                pass
+
+
+_notifier = _CompositeNotifier(mqtt_notifier, webhook_notifier)
 
 
 @app.on_event("startup")
@@ -105,11 +132,11 @@ async def startup():
     config.validate_config()
     db.init_db()
     app_settings.init_settings()
-    ingest_set_notifier(mqtt_notifier)
-    scheduler_set_notifier(mqtt_notifier)
+    ingest_set_notifier(_notifier)
+    scheduler_set_notifier(_notifier)
     scheduler.start()
     imap_poller.start()
-    await mqtt_notifier.start()
+    await _notifier.start()
     # Backfill: auto-archive any already-expired delivered shipments immediately
     scheduler._disable_retention_expired(datetime.now(timezone.utc), _ls())
 
@@ -118,7 +145,7 @@ async def startup():
 async def shutdown():
     scheduler.stop()
     imap_poller.stop()
-    await mqtt_notifier.stop()
+    await _notifier.stop()
 
 
 # NOTE: The ingest rate limiter uses a module-level Python list that is reset
@@ -238,6 +265,56 @@ def _annotate_stalled(shipments: list[dict]) -> None:
         s["stall_reason"] = stall_reason
 
 
+class CreateShipmentPayload(BaseModel):
+    tracking_number: str | None = Field(default=None, max_length=200)
+    carrier: str | None = Field(default=None, max_length=100)
+    title: str | None = Field(default=None, max_length=500)
+    order_number: str | None = Field(default=None, max_length=200)
+    tracking_link: str | None = Field(default=None, max_length=2000)
+    estimated_delivery: str | None = Field(default=None, max_length=20)
+
+
+@app.post("/api/shipments", status_code=201, dependencies=[Depends(_require_api_key)])
+async def api_create_shipment(payload: CreateShipmentPayload):
+    """Manually create a shipment from a tracking number."""
+    if not payload.tracking_number and not payload.order_number:
+        raise HTTPException(400, detail="tracking_number or order_number is required")
+    fields: dict = {
+        "tracking_number": payload.tracking_number,
+        "carrier": (payload.carrier or "").lower() or None,
+        "title": payload.title,
+        "order_number": payload.order_number,
+        "tracking_link": payload.tracking_link,
+        "status": "unknown",
+        "estimated_delivery": payload.estimated_delivery,
+    }
+    # Normalise tracking link if not provided
+    if payload.tracking_number and not fields["tracking_link"]:
+        from ingest import normalize_tracking_link  # noqa: PLC0415
+        fields["tracking_link"] = normalize_tracking_link(None, payload.tracking_number, fields["carrier"])
+    shipment_id = db.create_shipment(fields)
+    db.add_event(shipment_id, "unknown", "Manually added", "manual")
+    return db.get_shipment(shipment_id)
+
+
+@app.post("/api/shipments/bulk-archive", dependencies=[Depends(_require_api_key)])
+async def api_bulk_archive_delivered():
+    """Archive all delivered shipments in one shot."""
+    conn = db.get_conn()
+    rows = conn.execute(
+        "SELECT id FROM shipments WHERE current_state = 'delivered' AND archived = 0"
+    ).fetchall()
+    ids = [r["id"] for r in rows]
+    if ids:
+        conn.execute(
+            f"UPDATE shipments SET archived = 1 WHERE id IN ({','.join('?' * len(ids))})",
+            ids,
+        )
+        conn.commit()
+    conn.close()
+    return {"archived_count": len(ids), "archived_ids": ids}
+
+
 @app.get("/api/shipments", dependencies=[Depends(_require_api_key)])
 async def api_shipments(state: str | None = None, archived: str | None = None):
     """JSON list of shipments. ?state=active|delivered|archived, ?archived=true."""
@@ -301,7 +378,7 @@ async def api_update_shipment(shipment_id: int, request: Request):
     if not shipment:
         raise HTTPException(404)
     body = await request.json()
-    allowed = {"title", "carrier", "tracking_number", "order_number", "tracking_link", "current_state", "archived"}
+    allowed = {"title", "carrier", "tracking_number", "order_number", "tracking_link", "current_state", "archived", "estimated_delivery"}
     updates = {k: v for k, v in body.items() if k in allowed and v is not None}
     if "current_state" in updates:
         new_state = updates["current_state"]
