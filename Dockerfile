@@ -1,6 +1,6 @@
 FROM python:3.12-slim AS base
 WORKDIR /app
-COPY requirements.txt requirements-dev.txt ./
+COPY requirements.txt requirements-dev.txt requirements.lock ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 FROM base AS test
@@ -8,7 +8,10 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY . .
 RUN ruff check . && pytest tests/ -q --cov=ingest --cov-report=term-missing --cov-fail-under=25 && pip-audit --strict --progress-spinner off -r requirements.txt
 
-FROM base AS production
+FROM python:3.12-slim AS production
+WORKDIR /app
+COPY requirements.lock ./
+RUN pip install --no-cache-dir -r requirements.lock
 ARG VERSION=dev
 ENV TRACKBOX_VERSION=${VERSION}
 COPY . .
