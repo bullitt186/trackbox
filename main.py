@@ -11,13 +11,11 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
-from logging_config import setup_logging
-setup_logging()
-
 _START_TIME = time.time()
 
 import db
 from ingest import process_email
+from logging_config import setup_logging
 
 VALID_STATES = [
     "unknown", "preparing", "shipped", "in_transit",
@@ -52,6 +50,7 @@ class EmailPayload(BaseModel):
 
 @app.on_event("startup")
 def startup():
+    setup_logging()
     db.init_db()
 
 
