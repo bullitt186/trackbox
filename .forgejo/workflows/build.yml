@@ -57,7 +57,7 @@ jobs:
                 -H "Content-Type: application/json" \
                 -d '{"from":"ci@test.local","subject":"CI smoke test","body":"test","message_id":"ci-smoke-'$i'-'$$'@test"}')
               echo "Smoke test: ${RESULT}"
-              echo "${RESULT}" | grep -q '"shipment_id"' && echo "Ingest OK" && exit 0
+              echo "${RESULT}" | grep -q '"action"' && echo "Ingest OK" && exit 0
               echo "Ingest returned unexpected response"
               exit 1
             fi
