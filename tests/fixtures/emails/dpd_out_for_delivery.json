@@ -1,0 +1,14 @@
+{
+  "_comment": "Anonymised DPD tracking email — out_for_delivery state. Source: noreply@dpd.de",
+  "from": "noreply@dpd.de",
+  "subject": "Ihr DPD Paket wird heute zugestellt",
+  "body": "Guten Tag,\n\nIhr DPD Paket mit der Sendungsnummer 01234567890123456789 wird heute zugestellt.\n\nSendungsnummer: 01234567890123456789\nAktueller Status: In Zustellung\n\nSendung verfolgen:\nhttps://tracking.dpd.de/status/de_DE/parcel/01234567890123456789",
+  "html": "",
+  "message_id": "dpd-fixture-001@test",
+  "expected": {
+    "tracking_number": "01234567890123456789",
+    "carrier": "DPD",
+    "status": "out_for_delivery",
+    "action": "created"
+  }
+}

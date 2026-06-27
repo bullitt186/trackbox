@@ -1,0 +1,14 @@
+{
+  "_comment": "Anonymised Amazon tracking email — shipped state. Source: shipment-tracking@amazon.de",
+  "from": "shipment-tracking@amazon.de",
+  "subject": "In Zustellung: „PEBA Kabelverbinder...“",
+  "body": "Guten Tag,\n\nIhre Bestellung mit der Bestellnummer 123-4567890-1234567 wurde versandt.\n\nBestellnummer: 123-4567890-1234567\nAktueller Status: Versandt\n\nSendung verfolgen:\nhttps://track.amazon.de/tracking/6GJ7e7TaNELVN",
+  "html": "",
+  "message_id": "amazon-fixture-001@test",
+  "expected": {
+    "order_number": "123-4567890-1234567",
+    "carrier": "Amazon Logistics",
+    "status": "shipped",
+    "action": "created"
+  }
+}

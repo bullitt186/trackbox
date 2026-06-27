@@ -1,5 +1,7 @@
 pytest
 pytest-cov
+pytest-asyncio
+respx
 ruff
 pip-audit
 mypy

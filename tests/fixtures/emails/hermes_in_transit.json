@@ -1,0 +1,14 @@
+{
+  "_comment": "Anonymised Hermes tracking email — in_transit state. Source: noreply@paketankuendigung.myhermes.de",
+  "from": "noreply@paketankuendigung.myhermes.de",
+  "subject": "Deine Hermes Sendung von AliExpress ist auf dem Weg",
+  "body": "Hallo,\n\ndeine Sendung von AliExpress ist auf dem Weg zu dir.\n\nSendungsnummer: H1018660616235701042\n\nHier kannst du dein Paket verfolgen:\nhttps://www.myhermes.de/empfangen/sendungsverfolgung/sendungsinformation/#H1018660616235701042",
+  "html": "",
+  "message_id": "hermes-fixture-001@test",
+  "expected": {
+    "tracking_number": "H1018660616235701042",
+    "carrier": "Hermes",
+    "status": "in_transit",
+    "action": "created"
+  }
+}
