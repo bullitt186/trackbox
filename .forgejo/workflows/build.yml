@@ -8,6 +8,9 @@ jobs:
   build:
     runs-on: docker-build
     steps:
+      - name: Install Docker CLI
+        run: apk add --no-cache docker-cli
+
       - uses: actions/checkout@v4
 
       - name: Login to Forgejo Container Registry
