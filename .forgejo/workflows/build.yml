@@ -8,15 +8,17 @@ jobs:
   build:
     runs-on: docker-build
     steps:
-      - name: Build and push image
-        env:
-          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+      - name: Debug environment
         run: |
-          set -e
-          rm -rf /tmp/trackbox-ci
-          git clone --depth 1 http://git.stahmer.lan/bullitt/trackbox.git /tmp/trackbox-ci
-          echo "${REGISTRY_TOKEN}" | docker login git.stahmer.lan -u bullitt --password-stdin
-          docker build -t git.stahmer.lan/bullitt/trackbox:latest /tmp/trackbox-ci
-          docker push git.stahmer.lan/bullitt/trackbox:latest
-          rm -rf /tmp/trackbox-ci
-          echo "Done: image pushed successfully"
+          echo "=== env ==="
+          env | sort | head -20
+          echo "=== whoami ==="
+          whoami
+          echo "=== pwd ==="
+          pwd
+          echo "=== network ==="
+          cat /etc/resolv.conf
+          echo "=== git clone test ==="
+          git clone --depth 1 http://192.168.0.2:3002/bullitt/trackbox.git /tmp/ci-test 2>&1 || echo "CLONE FAILED"
+          ls /tmp/ci-test/main.py 2>&1 || echo "NO FILE"
+          rm -rf /tmp/ci-test
