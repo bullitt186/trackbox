@@ -117,7 +117,14 @@ export default function Settings() {
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
-      <h1 className="text-2xl font-bold">Settings</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Settings</h1>
+        {scraperStatus?.scheduler_running && (
+          <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
+            Scheduler Running
+          </Badge>
+        )}
+      </div>
 
       {/* Scraper Cards */}
       {scraperStatus?.scrapers.map(s => {
@@ -131,11 +138,6 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">{activeName} Scraper</CardTitle>
                 <div className="flex items-center gap-2">
-                  {scraperStatus?.scheduler_running && s.carrier === scraperStatus.scrapers[0]?.carrier && (
-                    <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
-                      Scheduler Running
-                    </Badge>
-                  )}
                   {form.enabled ? (
                     <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
                       Enabled
