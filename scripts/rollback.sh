@@ -23,7 +23,7 @@ curl -sf -X POST "http://192.168.0.2:9120/execute" \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: ${KOMODO_KEY}" \
   -H "X-Api-Secret: ${KOMODO_SECRET}" \
-  -d '{"type":"DeployStack","params":{"stack":"n8n"}}'
+  -d '{"type":"DeployStack","params":{"stack":"trackbox"}}'
 
 echo "Rollback triggered. Waiting for health..."
 sleep 20

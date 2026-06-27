@@ -1,12 +1,51 @@
 services:
   trackbox:
-    build: .
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./data:/app/data
+    image: git.stahmer.lan/bullitt/trackbox:latest
+    container_name: trackbox
+    hostname: trackbox
+    restart: unless-stopped
     environment:
+      - TZ=Europe/Berlin
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
       - DATABASE_PATH=/app/data/trackbox.db
-    restart: unless-stopped
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173}
+      - IMAP_HOST=${IMAP_HOST:-}
+      - IMAP_PORT=${IMAP_PORT:-993}
+      - IMAP_USER=${IMAP_USER:-}
+      - IMAP_PASSWORD=${IMAP_PASSWORD:-}
+      - IMAP_SSL=${IMAP_SSL:-true}
+      - IMAP_FOLDER=${IMAP_FOLDER:-INBOX}
+      - IMAP_DONE_FOLDER=${IMAP_DONE_FOLDER:-Trackbox/Processed}
+      - IMAP_INTERVAL=${IMAP_INTERVAL:-300}
+      - MQTT_HOST=${MQTT_HOST:-}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_USER=${MQTT_USER:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
+      - TRACKBOX_API_KEY=${TRACKBOX_API_KEY:-}
+    volumes:
+      - ${DATA_DIR:-./data}:/app/data
+    ports:
+      - "${BIND_IP:-0.0.0.0}:${PORT:-8900}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.trackbox.rule=Host(`trackbox.stahmer.lan`)"
+      - traefik.http.routers.trackbox.entrypoints=web
+      - traefik.http.services.trackbox.loadbalancer.server.port=8900
+    networks:
+      - trackbox-net
+
+networks:
+  trackbox-net:
+    name: trackbox-net
+    driver: bridge

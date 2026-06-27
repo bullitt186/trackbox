@@ -28,7 +28,28 @@ jobs:
           git clone --depth 1 http://192.168.0.2:3002/bullitt/trackbox.git /tmp/trackbox-ci
           cd /tmp/trackbox-ci
           SHA=$(git rev-parse --short HEAD)
-          VERSION=$(cat VERSION 2>/dev/null || echo "dev")
+
+          # Semver bump from conventional commits
+          LAST_TAG=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | head -1)
+          if [ -n "${LAST_TAG}" ]; then
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s")
+          else
+            COMMITS=$(git log --pretty=format:"%s")
+          fi
+          CURRENT=$(cat VERSION)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${CURRENT}"
+
+          BUMP="none"
+          echo "${COMMITS}" | grep -qi "BREAKING CHANGE\|^.*!:" && BUMP="major" || true
+          echo "${COMMITS}" | grep -qi "^feat" && [ "${BUMP}" = "none" ] && BUMP="minor" || true
+          echo "${COMMITS}" | grep -qi "^fix\|^perf\|^security" && [ "${BUMP}" = "none" ] && BUMP="patch" || true
+
+          if [ "${BUMP}" = "major" ]; then MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0
+          elif [ "${BUMP}" = "minor" ]; then MINOR=$((MINOR+1)); PATCH=0
+          elif [ "${BUMP}" = "patch" ]; then PATCH=$((PATCH+1))
+          fi
+          VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "${VERSION}" > VERSION
 
           # Test (lint + pytest + security)
           docker build --target test .
@@ -49,20 +70,21 @@ jobs:
 
           # Pre-deploy backup
           ssh -o StrictHostKeyChecking=no docker@192.168.0.50 \
-            /srv/docker-data/volumes/n8n/trackbox/scripts/backup.sh || true
+            /srv/docker-data/volumes/trackbox/scripts/backup.sh || true
 
           # Deploy via Komodo
-          docker pull git.stahmer.net/bullitt/trackbox:latest
           curl -sf -X POST "http://192.168.0.2:9120/execute" \
             -H "Content-Type: application/json" \
             -H "X-Api-Key: ${KOMODO_KEY}" \
             -H "X-Api-Secret: ${KOMODO_SECRET}" \
-            -d '{"type":"DeployStack","params":{"stack":"n8n"}}'
+            -d '{"type":"DeployStack","params":{"stack":"trackbox"}}'
 
           # Verify
           sleep 25
+          healthy=0
           for i in 1 2 3 4 5; do
             if curl -sf http://192.168.0.50:8900/health > /dev/null 2>&1; then
+              healthy=1
               # Smoke test with a realistic tracking email
               RESULT=$(curl -sf -X POST http://192.168.0.50:8900/ingest \
                 -H "Content-Type: application/json" \
@@ -79,13 +101,34 @@ jobs:
             fi
             sleep 10
           done
+          [ "${healthy}" = "1" ] || { echo "Health check timed out"; exit 1; }
+
+          # Commit version bump and tag release
+          git config user.email "ci@stahmer.net"
+          git config user.name "Trackbox CI"
+          git add VERSION
+          git diff --cached --quiet || git commit -m "chore: release v${VERSION} [skip ci]"
+          git tag "v${VERSION}" 2>/dev/null || true
+          git push "http://bullitt:${REGISTRY_TOKEN}@192.168.0.2:3002/bullitt/trackbox.git" HEAD:main --tags || true
+
+          # Create Forgejo release
+          if [ -n "${LAST_TAG}" ]; then
+            NOTES=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s" | grep -v "^\- chore:" | head -30)
+          else
+            NOTES="- Initial release"
+          fi
+          NOTES_JSON=$(printf '%s' "${NOTES}" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')
+          curl -sf -X POST "http://192.168.0.2:3002/api/v1/repos/bullitt/trackbox/releases" \
+            -H "Authorization: token ${REGISTRY_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag_name\":\"v${VERSION}\",\"name\":\"v${VERSION}\",\"body\":${NOTES_JSON},\"draft\":false}" || true
 
           # Tag successful deploy
           DEPLOY_TAG="deploy-$(date +%Y%m%d)-${SHA}"
           curl -sf -X POST "http://192.168.0.2:3002/api/v1/repos/bullitt/trackbox/tags" \
             -H "Authorization: token ${REGISTRY_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"tag_name\":\"${DEPLOY_TAG}\",\"target\":\"${SHA}\",\"message\":\"Deployed ${SHA} (v${VERSION})\"}" || true
+            -d "{\"tag_name\":\"${DEPLOY_TAG}\",\"target\":\"${SHA}\",\"message\":\"Deployed v${VERSION} (${SHA})\"}" || true
 
           # Notify success
           notify "success" "Trackbox deployed v${VERSION} (${SHA})" "Lint, test, build, backup, deploy, smoke test passed."

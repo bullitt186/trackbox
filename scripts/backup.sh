@@ -4,8 +4,8 @@
 # 0 3 * * * /path/to/backup.sh
 
 set -e
-DB="/srv/docker-data/volumes/n8n/trackbox/trackbox.db"
-BACKUP_DIR="/srv/docker-data/volumes/n8n/trackbox/backups"
+DB="/srv/docker-data/volumes/trackbox/trackbox.db"
+BACKUP_DIR="/srv/docker-data/volumes/trackbox/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p "${BACKUP_DIR}"
