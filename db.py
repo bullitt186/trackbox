@@ -1,6 +1,6 @@
-import sqlite3
 import json
 import os
+import sqlite3
 from datetime import datetime, timezone
 
 DB_PATH = os.getenv("DATABASE_PATH", "trackbox.db")

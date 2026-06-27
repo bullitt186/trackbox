@@ -1,8 +1,8 @@
-import re
 import json
+import re
 
-import db
 import ai
+import db
 
 URL_RE = re.compile(r'https?://[^\s<>"\')\]]+')
 
@@ -238,7 +238,7 @@ def extract_merchant_from_subject(subject: str) -> str | None:
 
 def extract_tracking_from_url(url: str) -> str | None:
     """Extract tracking number from known carrier URL patterns."""
-    from urllib.parse import urlparse, parse_qs
+    from urllib.parse import parse_qs, urlparse
     parsed = urlparse(url)
     params = parse_qs(parsed.query)
     # DHL: piececode parameter

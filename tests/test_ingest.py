@@ -1,11 +1,17 @@
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ingest import (
-    compute_fingerprint, apply_field_map, apply_strategy,
-    extract_tracking_from_url, normalize_tracking_link,
-    extract_merchant_from_subject, is_variable_token, strip_html,
-    get_effective_body
+    apply_strategy,
+    compute_fingerprint,
+    extract_merchant_from_subject,
+    extract_tracking_from_url,
+    get_effective_body,
+    is_variable_token,
+    normalize_tracking_link,
+    strip_html,
 )
 
 
