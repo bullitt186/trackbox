@@ -10,6 +10,9 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
+import time
+_START_TIME = time.time()
+
 import db
 from ingest import process_email
 
@@ -62,7 +65,8 @@ async def health():
     conn = db.get_conn()
     conn.execute("SELECT 1").fetchone()
     conn.close()
-    return {"status": "ok", "version": os.getenv("TRACKBOX_VERSION", "dev"), "build_time": os.getenv("TRACKBOX_BUILD_TIME", "unknown")}
+    uptime = int(time.time() - _START_TIME)
+    return {"status": "ok", "version": os.getenv("TRACKBOX_VERSION", "dev"), "build_time": os.getenv("TRACKBOX_BUILD_TIME", "unknown"), "uptime_seconds": uptime}
 
 
 @app.get("/api/stats")
