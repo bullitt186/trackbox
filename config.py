@@ -17,3 +17,9 @@ IMAP_SSL: bool = os.getenv("IMAP_SSL", "true").lower() == "true"
 IMAP_FOLDER: str = os.getenv("IMAP_FOLDER", "INBOX")
 IMAP_DONE_FOLDER: str = os.getenv("IMAP_DONE_FOLDER", "Trackbox/Processed")
 IMAP_INTERVAL: int = int(os.getenv("IMAP_INTERVAL", "300"))
+
+MQTT_HOST: str = os.getenv("MQTT_HOST", "")
+MQTT_PORT: int = int(os.getenv("MQTT_PORT", "1883"))
+MQTT_USER: str = os.getenv("MQTT_USER", "")
+MQTT_PASSWORD: str = os.getenv("MQTT_PASSWORD", "")
+MQTT_TOPIC_PREFIX: str = os.getenv("MQTT_TOPIC_PREFIX", "trackbox")

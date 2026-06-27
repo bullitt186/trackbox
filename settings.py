@@ -21,6 +21,10 @@ def _build_defaults() -> None:
         _DEFAULTS[f"scraper_{carrier}_retention_days"] = str(DEFAULT_RETENTION_DAYS)
     # DHL-specific: API key
     _DEFAULTS["scraper_dhl_api_key"] = ""
+    # Notifications
+    _DEFAULTS["mqtt_enabled"] = "false"
+    _DEFAULTS["mqtt_topic_prefix"] = "trackbox"
+    _DEFAULTS["trackbox_url"] = "http://192.168.0.50:8900"
 
 
 def _get_defaults() -> dict[str, str]:

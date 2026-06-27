@@ -18,8 +18,11 @@ import db
 import settings as app_settings
 from imap_poller import IMAPPoller
 from ingest import process_email
+from ingest import set_notifier as ingest_set_notifier
 from logging_config import setup_logging
+from notifiers.mqtt import MQTTNotifier
 from scheduler import ScraperScheduler, scrape_single
+from scheduler import set_notifier as scheduler_set_notifier
 from scrapers import list_scrapers
 
 VALID_STATES = [
@@ -54,28 +57,33 @@ class EmailPayload(BaseModel):
     model_config = {"populate_by_name": True}
 
 
-scheduler = ScraperScheduler()
+mqtt_notifier = MQTTNotifier()
+scheduler = ScraperScheduler(notifier=mqtt_notifier)
 imap_poller = IMAPPoller()
 
 
 @app.on_event("startup")
-def startup():
+async def startup():
     from datetime import datetime, timezone  # noqa: PLC0415
 
     from scrapers import list_scrapers as _ls
     setup_logging()
     db.init_db()
     app_settings.init_settings()
+    ingest_set_notifier(mqtt_notifier)
+    scheduler_set_notifier(mqtt_notifier)
     scheduler.start()
     imap_poller.start()
+    await mqtt_notifier.start()
     # Backfill: auto-archive any already-expired delivered shipments immediately
     scheduler._disable_retention_expired(datetime.now(timezone.utc), _ls())
 
 
 @app.on_event("shutdown")
-def shutdown():
+async def shutdown():
     scheduler.stop()
     imap_poller.stop()
+    await mqtt_notifier.stop()
 
 
 _ingest_timestamps: list = []

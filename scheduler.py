@@ -22,10 +22,11 @@ log = logging.getLogger("trackbox.scheduler")
 class ScraperScheduler:
     """Runs scraping cycles in the background inside the FastAPI event loop."""
 
-    def __init__(self) -> None:
+    def __init__(self, notifier=None) -> None:
         self._task: asyncio.Task | None = None
         self._running = False
         self._last_cycle_at: str | None = None
+        self._notifier = notifier
 
     @property
     def last_cycle_at(self) -> str | None:
@@ -255,6 +256,10 @@ class ScraperScheduler:
                 "Shipment %d: %s -> %s (scraper)",
                 shipment_id, current_state, new_state,
             )
+            if self._notifier:
+                asyncio.create_task(self._notifier.publish("state_change", {
+                    "shipment_id": shipment_id, "old_state": current_state, "new_state": new_state,
+                }))
         else:
             db.add_scrape_log(
                 shipment_id, carrier, tracking_number,
@@ -342,6 +347,12 @@ class ScraperScheduler:
 
 _last_manual_scrape: float = 0
 _MANUAL_SCRAPE_COOLDOWN = 6  # seconds, matches DHL 5s rate limit + safety
+_notifier = None
+
+
+def set_notifier(notifier) -> None:
+    global _notifier
+    _notifier = notifier
 
 
 async def scrape_single(shipment_id: int) -> dict:
@@ -433,6 +444,10 @@ async def scrape_single(shipment_id: int) -> dict:
             message=result.description, duration_ms=duration_ms,
         )
         state_changed = True
+        if _notifier:
+            asyncio.create_task(_notifier.publish("state_change", {
+                "shipment_id": shipment_id, "old_state": current_state, "new_state": new_state,
+            }))
     else:
         db.add_scrape_log(
             shipment_id, carrier, tracking_number,

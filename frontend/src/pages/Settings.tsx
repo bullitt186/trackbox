@@ -41,7 +41,7 @@ interface ScraperForm {
 const BASE = ""
 
 export default function Settings() {
-  const [, setAllSettings] = useState<Record<string, string>>({})
+  const [allSettings, setAllSettings] = useState<Record<string, string>>({})
   const [scraperStatus, setScraperStatus] = useState<ScrapersResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -49,6 +49,9 @@ export default function Settings() {
   const [recentLog, setRecentLog] = useState<ScrapeLogEntry[]>([])
   const [shipmentMap, setShipmentMap] = useState<Record<number, Shipment>>({})
   const [scraperForms, setScraperForms] = useState<Record<string, ScraperForm>>({})
+  const [mqttEnabled, setMqttEnabled] = useState(false)
+  const [mqttTopicPrefix, setMqttTopicPrefix] = useState("trackbox")
+  const [trackboxUrl, setTrackboxUrl] = useState("")
 
   useEffect(() => {
     Promise.all([
@@ -59,6 +62,9 @@ export default function Settings() {
     ]).then(([settingsData, scrapersData, logData, shipmentsData]) => {
       setAllSettings(settingsData)
       setScraperStatus(scrapersData)
+      setMqttEnabled(settingsData["mqtt_enabled"] === "true")
+      setMqttTopicPrefix(settingsData["mqtt_topic_prefix"] || "trackbox")
+      setTrackboxUrl(settingsData["trackbox_url"] || "")
 
       const forms: Record<string, ScraperForm> = {}
       for (const s of (scrapersData as ScrapersResponse).scrapers) {
@@ -93,6 +99,9 @@ export default function Settings() {
         payload[`scraper_${carrier}_api_key`] = form.apiKey
       }
     }
+    payload["mqtt_enabled"] = mqttEnabled ? "true" : "false"
+    payload["mqtt_topic_prefix"] = mqttTopicPrefix
+    payload["trackbox_url"] = trackboxUrl
     const resp = await fetch(`${BASE}/api/settings`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -250,6 +259,58 @@ export default function Settings() {
           </Card>
         )
       })}
+
+      {/* Notifications */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Notifications — Home Assistant MQTT</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Broker credentials (host, port, user, password) are configured via environment variables
+            (<code>MQTT_HOST</code>, <code>MQTT_PORT</code>, <code>MQTT_USER</code>, <code>MQTT_PASSWORD</code>).
+            Restart the container after changing them.
+          </p>
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Enable MQTT Publishing</label>
+            <button
+              onClick={() => setMqttEnabled(v => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${mqttEnabled ? "bg-primary" : "bg-muted"}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${mqttEnabled ? "translate-x-6" : "translate-x-1"}`} />
+            </button>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">MQTT Topic Prefix</label>
+            <Input
+              value={mqttTopicPrefix}
+              onChange={e => setMqttTopicPrefix(e.target.value)}
+              placeholder="trackbox"
+            />
+            <p className="text-xs text-muted-foreground">
+              Sensors publish to <code>{mqttTopicPrefix}/sensor/&lt;id&gt;</code>.
+              Autodiscovery to <code>homeassistant/sensor/trackbox_&lt;id&gt;/config</code>.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Trackbox URL</label>
+            <Input
+              value={trackboxUrl}
+              onChange={e => setTrackboxUrl(e.target.value)}
+              placeholder="http://192.168.0.50:8900"
+            />
+            <p className="text-xs text-muted-foreground">
+              Published as the <em>Trackbox URL</em> sensor in Home Assistant.
+            </p>
+          </div>
+          {allSettings["mqtt_enabled"] === "true" && (
+            <p className="text-xs text-emerald-600">
+              MQTT is active — sensors are publishing to{" "}
+              <code>{allSettings["mqtt_topic_prefix"] || "trackbox"}</code>.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Save button */}
       <div className="flex items-center gap-3">

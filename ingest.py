@@ -1,8 +1,16 @@
+import asyncio
 import json
 import re
 
 import ai
 import db
+
+_notifier = None
+
+
+def set_notifier(notifier) -> None:
+    global _notifier
+    _notifier = notifier
 
 URL_RE = re.compile(r'https?://[^\s<>"\')\]]+')
 
@@ -101,7 +109,9 @@ def process_email(email: dict) -> dict:
         extracted.get("order_number")
     )
 
+    old_state = None
     if shipment:
+        old_state = shipment["current_state"]
         updates = {}
         for field in ("tracking_number", "order_number", "carrier"):
             val = extracted.get(field)
@@ -131,6 +141,15 @@ def process_email(email: dict) -> dict:
         action = "created"
         final_state = status
     db.add_event(shipment_id, final_state, email["subject"], "email", message_id=msg_id, occurred_at=email.get("date"))
+
+    if _notifier and (action == "created" or final_state != old_state):
+        try:
+            loop = asyncio.get_event_loop()
+            loop.create_task(_notifier.publish("state_change", {
+                "shipment_id": shipment_id, "old_state": old_state, "new_state": final_state,
+            }))
+        except RuntimeError:
+            pass  # no running event loop (e.g. tests)
 
     return {
         "shipment_id": shipment_id,
