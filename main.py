@@ -16,6 +16,7 @@ _START_TIME = time.time()
 
 import db
 import settings as app_settings
+from imap_poller import IMAPPoller
 from ingest import process_email
 from logging_config import setup_logging
 from scheduler import ScraperScheduler, scrape_single
@@ -54,6 +55,7 @@ class EmailPayload(BaseModel):
 
 
 scheduler = ScraperScheduler()
+imap_poller = IMAPPoller()
 
 
 @app.on_event("startup")
@@ -62,11 +64,13 @@ def startup():
     db.init_db()
     app_settings.init_settings()
     scheduler.start()
+    imap_poller.start()
 
 
 @app.on_event("shutdown")
 def shutdown():
     scheduler.stop()
+    imap_poller.stop()
 
 
 _ingest_timestamps: list = []
@@ -256,6 +260,12 @@ async def api_list_scrapers():
         "scheduler_running": scheduler.running,
         "last_cycle_at": scheduler.last_cycle_at,
     }
+
+
+@app.get("/api/imap/status")
+async def api_imap_status():
+    """IMAP poller status."""
+    return imap_poller.status()
 
 
 @app.post("/api/shipments/{shipment_id}/scrape")

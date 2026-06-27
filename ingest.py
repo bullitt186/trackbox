@@ -18,7 +18,8 @@ def process_email(email: dict) -> dict:
     Returns {shipment_id, state, action, parser_status}.
     """
     # Dedup: skip if this message_id was already processed
-    msg_id = email.get("message_id")
+    # Normalize to strip surrounding <> so n8n and IMAP poller both match the same value
+    msg_id = (email.get("message_id") or "").strip().strip("<>").strip() or None
     if msg_id and db.event_exists_for_message_id(msg_id):
         return {"shipment_id": None, "state": None, "action": "skipped", "parser_status": "dedup"}
 
