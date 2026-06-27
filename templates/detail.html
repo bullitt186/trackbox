@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
     <title>{{ shipment.title or "Shipment #" ~ shipment.id }} — Trackbox</title>
     <style>
         body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
@@ -62,7 +63,7 @@
         <dt>Carrier</dt>
         <dd>{{ shipment.carrier or "—" }}</dd>
         <dt>Tracking Number</dt>
-        <dd>{{ shipment.tracking_number or "—" }}</dd>
+        <dd>{% if shipment.tracking_number %}<code style="cursor:pointer" onclick="navigator.clipboard.writeText('{{ shipment.tracking_number }}');this.style.color='#28a745'" title="Click to copy">{{ shipment.tracking_number }}</code>{% else %}—{% endif %}</dd>
         <dt>Order Number</dt>
         <dd>{{ shipment.order_number or "—" }}</dd>
         <dt>Tracking Link</dt>
