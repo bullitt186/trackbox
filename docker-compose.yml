@@ -1,6 +1,6 @@
 services:
   trackbox:
-    image: git.stahmer.lan/bullitt/trackbox:latest
+    image: git.stahmer.net/bullitt/trackbox:latest
     container_name: trackbox
     hostname: trackbox
     restart: unless-stopped
