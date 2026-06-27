@@ -117,6 +117,14 @@ def init_db() -> None:
         );
     """)
 
+    # Upgrade _migrations table itself if it was created without applied_at
+    # (this handles databases deployed before the applied_at column was added).
+    migration_cols = {row[1] for row in conn.execute("PRAGMA table_info(_migrations)").fetchall()}
+    if "applied_at" not in migration_cols:
+        _log.info("Upgrading _migrations table: adding applied_at column")
+        conn.execute("ALTER TABLE _migrations ADD COLUMN applied_at TEXT")
+        conn.commit()
+
     # Seed baseline row for pre-runner databases that already have the message_id column.
     # On a fresh DB the column doesn't exist yet, so we let _run_migration below add it.
     cols = {row[1] for row in conn.execute("PRAGMA table_info(events)").fetchall()}
