@@ -8,6 +8,13 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY . .
 RUN ruff check . && mypy config.py --no-error-summary || true && pytest tests/ -q --cov=ingest --cov-report=term-missing --cov-fail-under=25 && pip-audit --strict --progress-spinner off -r requirements.txt
 
+FROM node:20-slim AS frontend-build
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ .
+RUN npm run build
+
 FROM python:3.12-slim AS production
 WORKDIR /app
 COPY requirements.lock ./
@@ -21,5 +28,6 @@ LABEL org.opencontainers.image.source="https://git.stahmer.net/bullitt/trackbox"
       org.opencontainers.image.description="AI-powered parcel tracking" \
       org.opencontainers.image.version="${VERSION}"
 COPY . .
+COPY --from=frontend-build /frontend/dist ./frontend/dist
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

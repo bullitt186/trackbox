@@ -32,9 +32,10 @@ app.add_middleware(
 )
 templates = Jinja2Templates(directory="templates")
 
-# Serve frontend build output if it exists
-if os.path.isdir("frontend/dist"):
-    app.mount("/app", StaticFiles(directory="frontend/dist", html=True), name="frontend")
+# Serve React SPA from frontend/dist if available
+_HAS_FRONTEND = os.path.isdir("frontend/dist")
+if _HAS_FRONTEND:
+    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="static-assets")
 
 
 class EmailPayload(BaseModel):
@@ -279,3 +280,16 @@ def validate_env():
     log = logging.getLogger("trackbox.startup")
     if not os.getenv("OPENAI_API_KEY"):
         log.warning("OPENAI_API_KEY not set - AI extraction will fail")
+
+
+# SPA catch-all: serve React frontend for client-side routing
+if _HAS_FRONTEND:
+    from fastapi.responses import FileResponse
+
+    @app.get("/{path:path}", response_class=HTMLResponse)
+    async def spa_catchall(path: str):
+        """Serve React SPA for all non-API routes."""
+        file_path = f"frontend/dist/{path}"
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse("frontend/dist/index.html")

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchShipments } from '@/lib/api'
-import type { Shipment } from '@/types/shipment'
+import { fetchShipments, type Shipment } from '@/lib/api'
 
 export function useShipments() {
   const [shipments, setShipments] = useState<Shipment[]>([])
