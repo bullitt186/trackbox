@@ -11,6 +11,9 @@ RUN ruff check . && pytest tests/ -q && pip-audit --strict --progress-spinner of
 FROM base AS production
 ARG VERSION=dev
 ENV TRACKBOX_VERSION=${VERSION}
+RUN adduser -D -u 1000 app
 COPY . .
+RUN chown -R app:app /app
+USER app
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
