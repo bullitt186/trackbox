@@ -5,6 +5,9 @@ import db
 MIN_INTERVAL_MINUTES = 10
 DEFAULT_RETENTION_DAYS = 30
 
+# Keys that are redacted from GET /api/settings responses (secrets).
+_SECRET_KEYS: frozenset[str] = frozenset({"scraper_dhl_api_key"})
+
 _DEFAULTS: dict[str, str] = {}
 
 
@@ -80,6 +83,20 @@ def get_all_settings() -> dict[str, str]:
     for row in rows:
         result[row["key"]] = row["value"]
     return result
+
+
+def get_public_settings() -> dict[str, str]:
+    """Return all settings with secret values redacted (safe for API responses)."""
+    result = get_all_settings()
+    for key in _SECRET_KEYS:
+        if key in result and result[key]:
+            result[key] = "***"
+    return result
+
+
+def get_allowed_keys() -> frozenset[str]:
+    """Return the set of keys that may be written via PUT /api/settings."""
+    return frozenset(_get_defaults().keys())
 
 
 def init_settings() -> None:

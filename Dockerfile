@@ -29,5 +29,10 @@ LABEL org.opencontainers.image.source="https://git.stahmer.net/bullitt/trackbox"
       org.opencontainers.image.version="${VERSION}"
 COPY . .
 COPY --from=frontend-build /frontend/dist ./frontend/dist
+# Drop root privileges: create a dedicated non-root user and fix ownership
+RUN useradd -r -u 1001 -m -d /app -s /sbin/nologin app \
+    && mkdir -p /app/data \
+    && chown -R app:app /app
+USER app
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

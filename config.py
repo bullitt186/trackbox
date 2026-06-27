@@ -9,6 +9,10 @@ RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "30"))
 DHL_API_KEY: str = os.getenv("DHL_API_KEY", "")
 DHL_API_SECRET: str = os.getenv("DHL_API_SECRET", "")
 
+# API key for authenticating API requests (X-API-Key header).
+# When empty, authentication is disabled (trusted-network / reverse-proxy deployment).
+API_KEY: str = os.getenv("TRACKBOX_API_KEY", "")
+
 IMAP_HOST: str = os.getenv("IMAP_HOST", "")
 IMAP_PORT: int = int(os.getenv("IMAP_PORT", "993"))
 IMAP_USER: str = os.getenv("IMAP_USER", "")

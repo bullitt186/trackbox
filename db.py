@@ -84,16 +84,18 @@ def init_db():
             occurred_at TEXT
         );
     """)
-    # Migration: add scraping and archive columns to shipments
-    for col, default in [
-        ("scrape_enabled", "1"),
-        ("scrape_fail_count", "0"),
-        ("last_scraped_at", "NULL"),
-        ("archived", "0"),
-    ]:
+    # Migration: add scraping and archive columns to shipments.
+    # Each migration is a static, fully-literal DDL string — no user input is
+    # interpolated — to avoid setting an f-string-in-DDL precedent.
+    _column_migrations = [
+        "ALTER TABLE shipments ADD COLUMN scrape_enabled INTEGER DEFAULT 1",
+        "ALTER TABLE shipments ADD COLUMN scrape_fail_count INTEGER DEFAULT 0",
+        "ALTER TABLE shipments ADD COLUMN last_scraped_at TEXT DEFAULT NULL",
+        "ALTER TABLE shipments ADD COLUMN archived INTEGER DEFAULT 0",
+    ]
+    for stmt in _column_migrations:
         try:
-            col_type = "TEXT" if col == "last_scraped_at" else "INTEGER"
-            conn.execute(f"ALTER TABLE shipments ADD COLUMN {col} {col_type} DEFAULT {default}")
+            conn.execute(stmt)
             conn.commit()
         except Exception:
             pass

@@ -1,16 +1,44 @@
+import logging
 import os
 import time
 import uuid
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.security.api_key import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 load_dotenv()
+
+import config as _config
+
+_log = logging.getLogger("trackbox.api")
+
+# ---------------------------------------------------------------------------
+# API key authentication
+# ---------------------------------------------------------------------------
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+async def _require_api_key(api_key: str | None = Security(_api_key_header)) -> None:
+    """Dependency that enforces X-API-Key when TRACKBOX_API_KEY is configured."""
+    configured = _config.API_KEY
+    if not configured:
+        # Auth disabled — trusted-network / reverse-proxy deployment.
+        return
+    if not api_key or api_key != configured:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+
+# ---------------------------------------------------------------------------
+# Shared rate-limit state for write endpoints
+# ---------------------------------------------------------------------------
+_write_timestamps: list = []
+_WRITE_RATE_LIMIT = 60  # max write ops per minute across all write endpoints
 
 _START_TIME = time.time()
 
@@ -35,7 +63,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*", "X-API-Key"],
 )
 templates = Jinja2Templates(directory="templates")
 
@@ -89,7 +117,16 @@ async def shutdown():
 _ingest_timestamps: list = []
 
 
-@app.post("/ingest")
+def _check_write_rate_limit() -> None:
+    """Shared in-memory rate limit for all write endpoints (60 ops/min)."""
+    now = time.time()
+    _write_timestamps[:] = [t for t in _write_timestamps if now - t < 60]
+    if len(_write_timestamps) >= _WRITE_RATE_LIMIT:
+        raise HTTPException(429, detail="Rate limit exceeded")
+    _write_timestamps.append(now)
+
+
+@app.post("/ingest", dependencies=[Depends(_require_api_key)])
 async def ingest_email(payload: EmailPayload):
     # ponytail: simple in-memory rate limit, 30 req/min
     now = time.time()
@@ -102,10 +139,9 @@ async def ingest_email(payload: EmailPayload):
     email = {"from": payload.from_, "subject": payload.subject, "body": payload.body, "html": payload.html, "product_name": payload.product_name, "message_id": payload.message_id, "date": payload.date}
     try:
         result = process_email(email)
-    except Exception as e:
-        import logging
-        logging.getLogger("trackbox.ingest").exception("Ingest failed [%s]: %s", request_id, e)
-        return {"shipment_id": None, "state": None, "action": "error", "parser_status": "error", "error": str(e), "request_id": request_id}
+    except Exception:
+        _log.exception("Ingest failed [%s]", request_id)
+        return {"shipment_id": None, "state": None, "action": "error", "parser_status": "error", "error": "Internal processing error", "request_id": request_id}
     result["request_id"] = request_id
     status = 201 if result.get("action") == "created" else 200
     return JSONResponse(content=result, status_code=status)
@@ -117,12 +153,11 @@ async def health():
     conn = db.get_conn()
     conn.execute("SELECT 1").fetchone()
     conn.close()
-    import config as cfg
     uptime = int(time.time() - _START_TIME)
-    return {"status": "ok", "version": cfg.TRACKBOX_VERSION, "build_time": cfg.TRACKBOX_BUILD_TIME, "uptime_seconds": uptime}
+    return {"status": "ok", "version": _config.TRACKBOX_VERSION, "build_time": _config.TRACKBOX_BUILD_TIME, "uptime_seconds": uptime}
 
 
-@app.get("/api/stats")
+@app.get("/api/stats", dependencies=[Depends(_require_api_key)])
 async def api_stats():
     """System statistics."""
     conn = db.get_conn()
@@ -179,7 +214,7 @@ def _annotate_stalled(shipments: list[dict]) -> None:
         s["stall_reason"] = stall_reason
 
 
-@app.get("/api/shipments")
+@app.get("/api/shipments", dependencies=[Depends(_require_api_key)])
 async def api_shipments(state: str | None = None, archived: str | None = None):
     """JSON list of shipments. ?state=active|delivered|archived, ?archived=true."""
     # archived=true or state=archived → show archived shipments
@@ -206,7 +241,7 @@ async def api_shipments(state: str | None = None, archived: str | None = None):
     return shipments
 
 
-@app.get("/api/shipments/{shipment_id}")
+@app.get("/api/shipments/{shipment_id}", dependencies=[Depends(_require_api_key)])
 async def api_shipment_detail(shipment_id: int):
     """JSON detail of a single shipment with events."""
     from datetime import datetime, timedelta, timezone  # noqa: PLC0415
@@ -241,7 +276,7 @@ async def api_shipment_detail(shipment_id: int):
     return {**shipment, "events": events, "tracking_expires_at": tracking_expires_at}
 
 
-@app.put("/api/shipments/{shipment_id}")
+@app.put("/api/shipments/{shipment_id}", dependencies=[Depends(_require_api_key)])
 async def api_update_shipment(shipment_id: int, request: Request):
     """Update shipment fields (title, state, carrier, etc)."""
     from ingest import should_update_state
@@ -265,7 +300,7 @@ async def api_update_shipment(shipment_id: int, request: Request):
     return db.get_shipment(shipment_id)
 
 
-@app.delete("/api/shipments/{shipment_id}")
+@app.delete("/api/shipments/{shipment_id}", dependencies=[Depends(_require_api_key)])
 async def api_delete_shipment(shipment_id: int):
     """Delete a shipment and all its events."""
     shipment = db.get_shipment(shipment_id)
@@ -275,7 +310,7 @@ async def api_delete_shipment(shipment_id: int):
     return {"deleted": shipment_id}
 
 
-@app.delete("/api/parsers/{parser_id}")
+@app.delete("/api/parsers/{parser_id}", dependencies=[Depends(_require_api_key)])
 async def delete_parser(parser_id: int):
     """Delete a stored parser."""
     conn = db.get_conn()
@@ -285,7 +320,7 @@ async def delete_parser(parser_id: int):
     return {"deleted": parser_id}
 
 
-@app.get("/api/parsers")
+@app.get("/api/parsers", dependencies=[Depends(_require_api_key)])
 async def api_parsers():
     """JSON list of all stored parsers with use counts."""
     conn = db.get_conn()
@@ -297,19 +332,25 @@ async def api_parsers():
 # --- Settings endpoints ---
 
 
-@app.get("/api/settings")
+@app.get("/api/settings", dependencies=[Depends(_require_api_key)])
 async def api_get_settings():
-    """Get all settings as JSON."""
-    return app_settings.get_all_settings()
+    """Get all settings as JSON (secret values are redacted)."""
+    return app_settings.get_public_settings()
 
 
-@app.put("/api/settings")
+@app.put("/api/settings", dependencies=[Depends(_require_api_key)])
 async def api_update_settings(request: Request):
-    """Update settings (JSON body with key-value pairs)."""
+    """Update settings (JSON body with key-value pairs). Only known keys are accepted."""
     from scrapers import list_scrapers as _list_scrapers
+    _check_write_rate_limit()
     body = await request.json()
+    allowed_keys = app_settings.get_allowed_keys()
     scraper_max = {s["carrier"]: s["max_retention_days"] for s in _list_scrapers()}
+    rejected: list[str] = []
     for key, value in body.items():
+        if key not in allowed_keys:
+            rejected.append(key)
+            continue
         # Cap retention_days at the carrier's documented maximum
         if key.endswith("_retention_days"):
             carrier = key.replace("scraper_", "").replace("_retention_days", "")
@@ -319,24 +360,26 @@ async def api_update_settings(request: Request):
             except ValueError:
                 pass
         app_settings.set_setting(key, str(value))
-    return app_settings.get_all_settings()
+    if rejected:
+        _log.warning("PUT /api/settings: rejected unknown keys: %s", rejected)
+    return app_settings.get_public_settings()
 
 
 # --- Scraper endpoints ---
 
 
-@app.get("/api/scrape-log")
+@app.get("/api/scrape-log", dependencies=[Depends(_require_api_key)])
 async def api_scrape_log(
     shipment_id: int | None = None,
     carrier: str | None = None,
     status: str | None = None,
-    limit: int = 50,
+    limit: int = Query(default=50, ge=1, le=1000),
 ):
-    """Query the scrape log with optional filters."""
+    """Query the scrape log with optional filters. limit is capped at 1000."""
     return db.get_scrape_log(shipment_id=shipment_id, carrier=carrier, status=status, limit=limit)
 
 
-@app.get("/api/scrapers")
+@app.get("/api/scrapers", dependencies=[Depends(_require_api_key)])
 async def api_list_scrapers():
     """List available scrapers with status."""
     scrapers = list_scrapers()
@@ -371,15 +414,16 @@ async def api_list_scrapers():
     }
 
 
-@app.get("/api/imap/status")
+@app.get("/api/imap/status", dependencies=[Depends(_require_api_key)])
 async def api_imap_status():
     """IMAP poller status."""
     return imap_poller.status()
 
 
-@app.post("/api/shipments/{shipment_id}/scrape")
+@app.post("/api/shipments/{shipment_id}/scrape", dependencies=[Depends(_require_api_key)])
 async def api_scrape_shipment(shipment_id: int):
     """Trigger immediate scrape for this shipment."""
+    _check_write_rate_limit()
     shipment = db.get_shipment(shipment_id)
     if not shipment:
         raise HTTPException(404)
@@ -389,7 +433,7 @@ async def api_scrape_shipment(shipment_id: int):
     return result
 
 
-@app.put("/api/shipments/{shipment_id}/scrape")
+@app.put("/api/shipments/{shipment_id}/scrape", dependencies=[Depends(_require_api_key)])
 async def api_toggle_scrape(shipment_id: int, request: Request):
     """Enable/disable scraping for a shipment."""
     shipment = db.get_shipment(shipment_id)
@@ -501,10 +545,9 @@ if not _HAS_FRONTEND:
 @app.on_event("startup")
 def validate_env():
     """Warn about missing optional config."""
-    import logging  # noqa: E402
-    log = logging.getLogger("trackbox.startup")
+    _startup_log = logging.getLogger("trackbox.startup")
     if not os.getenv("OPENAI_API_KEY"):
-        log.warning("OPENAI_API_KEY not set - AI extraction will fail")
+        _startup_log.warning("OPENAI_API_KEY not set - AI extraction will fail")
 
 
 # SPA catch-all: serve React frontend for client-side routing
