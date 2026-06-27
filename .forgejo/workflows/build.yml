@@ -34,7 +34,7 @@ jobs:
 
           # Build production image
           echo "${REGISTRY_TOKEN}" | docker login git.stahmer.net -u bullitt --password-stdin
-          docker build --target production --build-arg VERSION=${SHA} -t git.stahmer.net/bullitt/trackbox:${SHA} .
+          docker build --target production --build-arg VERSION=${SHA} --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) -t git.stahmer.net/bullitt/trackbox:${SHA} .
           docker tag git.stahmer.net/bullitt/trackbox:${SHA} git.stahmer.net/bullitt/trackbox:latest
           docker push git.stahmer.net/bullitt/trackbox:${SHA}
           docker push git.stahmer.net/bullitt/trackbox:latest

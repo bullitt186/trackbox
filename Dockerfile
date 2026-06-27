@@ -13,7 +13,9 @@ WORKDIR /app
 COPY requirements.lock ./
 RUN pip install --no-cache-dir -r requirements.lock
 ARG VERSION=dev
+ARG BUILD_TIME=unknown
 ENV TRACKBOX_VERSION=${VERSION}
+ENV TRACKBOX_BUILD_TIME=${BUILD_TIME}
 LABEL org.opencontainers.image.source="https://git.stahmer.net/bullitt/trackbox" \
       org.opencontainers.image.title="Trackbox" \
       org.opencontainers.image.description="AI-powered parcel tracking" \

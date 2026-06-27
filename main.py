@@ -62,7 +62,7 @@ async def health():
     conn = db.get_conn()
     conn.execute("SELECT 1").fetchone()
     conn.close()
-    return {"status": "ok", "version": os.getenv("TRACKBOX_VERSION", "dev")}
+    return {"status": "ok", "version": os.getenv("TRACKBOX_VERSION", "dev"), "build_time": os.getenv("TRACKBOX_BUILD_TIME", "unknown")}
 
 
 @app.get("/api/stats")
