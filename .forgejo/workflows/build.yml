@@ -8,15 +8,22 @@ jobs:
   build:
     runs-on: docker-build
     steps:
-      - name: Install Docker CLI
-        run: apk add --no-cache docker-cli
+      - name: Install dependencies
+        run: apk add --no-cache docker-cli git
 
-      - uses: actions/checkout@v4
+      - name: Checkout
+        run: |
+          git clone --depth 1 http://git.stahmer.lan/bullitt/trackbox.git /tmp/trackbox
+          cd /tmp/trackbox
 
       - name: Login to Forgejo Container Registry
         run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login git.stahmer.lan -u bullitt --password-stdin
 
       - name: Build and push
         run: |
+          cd /tmp/trackbox
           docker build -t git.stahmer.lan/bullitt/trackbox:latest .
           docker push git.stahmer.lan/bullitt/trackbox:latest
+
+      - name: Cleanup
+        run: rm -rf /tmp/trackbox
