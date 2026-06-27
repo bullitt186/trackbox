@@ -7,8 +7,6 @@ the parsing logic without hitting live carrier endpoints.
 
 from __future__ import annotations
 
-import json
-
 import httpx
 import pytest
 import respx
@@ -19,7 +17,6 @@ from scrapers.dhl_web import DHLWebScraper
 from scrapers.dpd import DPDScraper
 from scrapers.gls import GLSScraper
 from scrapers.hermes import HermesScraper
-
 
 # ===========================================================================
 # DHL Web scraper

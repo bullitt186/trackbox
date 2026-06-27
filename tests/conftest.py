@@ -17,14 +17,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("DATABASE_PATH", ":memory:")
 os.environ.setdefault("OPENAI_API_KEY", "test-key-not-real")
 
-import sqlite3
 from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
 
 import db
-
 
 # ---------------------------------------------------------------------------
 # DB isolation fixture

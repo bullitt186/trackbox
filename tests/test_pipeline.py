@@ -16,11 +16,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
-
 import db
 from ingest import process_email
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -165,7 +162,6 @@ def test_ai_failure_creates_shipment_with_parser_status_failed(fresh_db):
 
 def test_existing_parser_used_and_use_count_incremented(fresh_db):
     """When a parser exists for the domain+keywords, it is applied and use_count goes up."""
-    import json
 
     # Manually create a parser that will match "dhl.de" + keywords for this email
     from ingest import compute_fingerprint
@@ -179,7 +175,7 @@ def test_existing_parser_used_and_use_count_incremented(fresh_db):
         "order_number": {"strategy": "none"},
         "tracking_link": {"strategy": "none"},
     }
-    pid = db.create_parser(domain, keywords, field_map)
+    db.create_parser(domain, keywords, field_map)
 
     email = _email(body="Sendungsnummer 00340161386676443882\nStatus: In Zustellung")
 

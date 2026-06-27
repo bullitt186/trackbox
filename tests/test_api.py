@@ -5,11 +5,7 @@ Uses FastAPI's TestClient (backed by httpx) against an in-memory SQLite DB
 so the full stack is exercised without any live network calls.
 """
 
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
-
+from unittest.mock import patch
 
 # ---------------------------------------------------------------------------
 # Health
@@ -367,9 +363,10 @@ def test_ingest_dedup_skips_duplicate_message_id(test_app):
 
 def test_ingest_rate_limit(test_app, monkeypatch):
     """After 30 requests the rate limiter kicks in."""
-    import main
     # Fill up timestamps so next call is over the limit
     import time
+
+    import main
     now = time.time()
     monkeypatch.setattr(main, "_ingest_timestamps", [now] * 30)
     resp = test_app.post("/ingest", json={

@@ -117,16 +117,31 @@ def init_db() -> None:
         );
     """)
 
-    # Seed baseline row for the very first migration that pre-dated the runner.
-    conn.execute(
-        """
-        INSERT OR IGNORE INTO _migrations (name, applied_at)
-        VALUES ('add_message_id', ?)
-        """,
-        (_now(),),
-    )
+    # Seed baseline row for pre-runner databases that already have the message_id column.
+    # On a fresh DB the column doesn't exist yet, so we let _run_migration below add it.
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(events)").fetchall()}
+    if "message_id" in cols:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO _migrations (name, applied_at)
+            VALUES ('add_message_id', ?)
+            """,
+            (_now(),),
+        )
+        conn.commit()
 
-    # Indexes on hot query paths (idempotent)
+    # --- Versioned, append-only migration list ---
+    # To add a new migration: append a _run_migration() call below.
+    # Never modify or reorder existing entries.
+
+    _run_migration(conn, "add_message_id", "ALTER TABLE events ADD COLUMN message_id TEXT")
+    _run_migration(conn, "add_scrape_enabled", "ALTER TABLE shipments ADD COLUMN scrape_enabled INTEGER DEFAULT 1")
+    _run_migration(conn, "add_scrape_fail_count", "ALTER TABLE shipments ADD COLUMN scrape_fail_count INTEGER DEFAULT 0")
+    _run_migration(conn, "add_last_scraped_at", "ALTER TABLE shipments ADD COLUMN last_scraped_at TEXT")
+    _run_migration(conn, "add_archived", "ALTER TABLE shipments ADD COLUMN archived INTEGER DEFAULT 0")
+    _run_migration(conn, "add_estimated_delivery", "ALTER TABLE shipments ADD COLUMN estimated_delivery TEXT")
+
+    # Indexes on hot query paths (idempotent — created after column migrations so columns exist)
     conn.executescript("""
         CREATE INDEX IF NOT EXISTS idx_events_message_id
             ON events(message_id);
@@ -139,18 +154,6 @@ def init_db() -> None:
         CREATE INDEX IF NOT EXISTS idx_scrape_log_occurred_at
             ON scrape_log(occurred_at);
     """)
-    conn.commit()
-
-    # --- Versioned, append-only migration list ---
-    # To add a new migration: append a _run_migration() call below.
-    # Never modify or reorder existing entries.
-
-    _run_migration(conn, "add_message_id", "ALTER TABLE events ADD COLUMN message_id TEXT")
-    _run_migration(conn, "add_scrape_enabled", "ALTER TABLE shipments ADD COLUMN scrape_enabled INTEGER DEFAULT 1")
-    _run_migration(conn, "add_scrape_fail_count", "ALTER TABLE shipments ADD COLUMN scrape_fail_count INTEGER DEFAULT 0")
-    _run_migration(conn, "add_last_scraped_at", "ALTER TABLE shipments ADD COLUMN last_scraped_at TEXT")
-    _run_migration(conn, "add_archived", "ALTER TABLE shipments ADD COLUMN archived INTEGER DEFAULT 0")
-    _run_migration(conn, "add_estimated_delivery", "ALTER TABLE shipments ADD COLUMN estimated_delivery TEXT")
 
     # Data-fix migration: ensure current_state = 'delivered' whenever the most
     # recent event says delivered but the shipment row hasn't been updated yet.

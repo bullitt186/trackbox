@@ -9,10 +9,7 @@ import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 import ai
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -99,7 +96,7 @@ def test_extraction_passes_email_content_to_api():
 
 
 def test_html_hint_included_when_body_is_short():
-    """When body < 100 chars and html is present, first 2000 chars of HTML are appended."""
+    """When body < 100 chars and html is present, first 1000 chars of HTML are appended."""
     payload = {
         "extracted": {"status": "shipped", "tracking_number": None, "carrier": None, "order_number": None, "tracking_link": None, "title": None},
         "field_map": {},
@@ -117,7 +114,7 @@ def test_html_hint_included_when_body_is_short():
         messages = call_args.kwargs["messages"] if call_args.kwargs else call_args[1]["messages"]
         user_msg = next(m for m in messages if m["role"] == "user")
         # HTML hint should be present (first 2000 chars of the HTML)
-        assert "HTML (raw, first 2000 chars)" in user_msg["content"]
+        assert "HTML (raw, first 1000 chars)" in user_msg["content"]
 
 
 # ---------------------------------------------------------------------------

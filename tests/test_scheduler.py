@@ -16,12 +16,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 import db
 from scheduler import ScraperScheduler
 from scrapers.base import ScraperResult
-
 
 # ---------------------------------------------------------------------------
 # Helpers

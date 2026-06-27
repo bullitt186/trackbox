@@ -237,7 +237,8 @@ function StalledBadge({ reason }: { reason?: string | null }) {
   )
 }
 
-/** Add Shipment modal */
+// ── Add Shipment modal ────────────────────────────────────────────────────────
+
 function AddShipmentModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [form, setForm] = useState<CreateShipmentInput>({ tracking_number: "", carrier: "", title: "" })
   const [saving, setSaving] = useState(false)
@@ -271,7 +272,11 @@ function AddShipmentModal({ onClose, onCreated }: { onClose: () => void; onCreat
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold">Add Shipment</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close">
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none rounded-sm"
+            aria-label="Close"
+          >
             <XIcon className="h-4 w-4" />
           </button>
         </div>
@@ -317,33 +322,51 @@ function AddShipmentModal({ onClose, onCreated }: { onClose: () => void; onCreat
   )
 }
 
+// ── ShipmentCard — UX hierarchy + PM ETA fallback chain ──────────────────────
+
+function ShipmentCard({ shipment, onArchive, onUnarchive, isArchiving = false }: {
+  shipment: Shipment
+  onArchive?: (id: number) => void
+  onUnarchive?: (id: number) => void
+  isArchiving?: boolean
+}) {
+  // Fallback chain: etaLabel (structured field) → extractETA (notes regex)
+  const eta = etaLabel(shipment.estimated_delivery) ?? extractETA(shipment.last_event?.notes)
+  const isArrivingSoon = eta === "Arriving today" || eta === "Arriving tomorrow"
+  const showETA = eta && shipment.current_state !== "delivered"
 
   return (
     <div className={isArchiving ? "animate-archive-out" : undefined}>
     <Link to={`/shipments/${shipment.id}`}>
       <Card className={cn(
         "group hover:shadow-md transition-all cursor-pointer border-l-4",
-        isArrivingSoon ? "border-l-amber-400 ring-1 ring-amber-200 dark:ring-amber-800" : (STATUS_ACCENT[shipment.current_state] ?? "border-l-border")
+        isArrivingSoon
+          ? "border-l-amber-400 ring-1 ring-amber-200 dark:ring-amber-800"
+          : (STATUS_ACCENT[shipment.current_state] ?? "border-l-border")
       )}>
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              {/* Title — primary anchor (item 7) */}
+              {/* Title — primary anchor */}
               <p className="font-semibold text-base line-clamp-2 leading-tight">
                 {shipment.title || `Shipment #${shipment.id}`}
               </p>
-              {/* Carrier — secondary row below title (item 7) */}
+              {/* Carrier — secondary row below title */}
               {shipment.carrier && (
                 <div className="flex items-center gap-1.5 mt-1">
                   <CarrierIcon carrier={shipment.carrier} size={14} />
                   <p className="text-xs text-muted-foreground">{shipment.carrier}</p>
                 </div>
               )}
-              {/* ETA — prominently shown (item 2) */}
+              {/* ETA — prominently shown with arriving-soon highlight */}
               {showETA && (
-                <p className="text-xs font-medium text-sky-700 dark:text-sky-400 mt-1">
-                  Est. delivery: {eta}
-                </p>
+                <div className={cn(
+                  "flex items-center gap-1 mt-1 text-xs font-medium",
+                  isArrivingSoon ? "text-amber-600 dark:text-amber-400" : "text-sky-700 dark:text-sky-400"
+                )}>
+                  <Clock className="h-3 w-3" />
+                  {eta}
+                </div>
               )}
               {/* Tracking number — tertiary */}
               {shipment.tracking_number && (
@@ -376,16 +399,6 @@ function AddShipmentModal({ onClose, onCreated }: { onClose: () => void; onCreat
               )}
             </div>
           </div>
-          {/* ETA highlight */}
-          {eta && (
-            <div className={cn(
-              "flex items-center gap-1 mt-2 text-xs font-medium",
-              isArrivingSoon ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
-            )}>
-              <Clock className="h-3 w-3" />
-              {eta}
-            </div>
-          )}
           {shipment.last_event?.notes && (
             <p className="text-xs text-muted-foreground mt-2 truncate border-t border-border pt-2">
               <span className="font-medium">Last update:</span> {shipment.last_event.notes}
@@ -394,7 +407,7 @@ function AddShipmentModal({ onClose, onCreated }: { onClose: () => void; onCreat
           <div className="flex justify-end text-xs text-muted-foreground mt-1">
             <span>Last carrier update {relativeTime(shipment.last_updated_at)}</span>
           </div>
-          {/* Archive / Unarchive — visible on hover OR keyboard focus (item 6) */}
+          {/* Archive / Unarchive — visible on hover OR keyboard focus */}
           {(onArchive || onUnarchive) && (
             <div className="mt-2 pt-2 border-t border-border flex justify-end opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
               {onArchive && (
@@ -430,7 +443,8 @@ function ShipmentRow({ shipment, onArchive, onUnarchive, isArchiving = false }: 
   onUnarchive?: (id: number) => void
   isArchiving?: boolean
 }) {
-  const eta = etaLabel(shipment.estimated_delivery)
+  const eta = etaLabel(shipment.estimated_delivery) ?? extractETA(shipment.last_event?.notes)
+  const isArrivingSoon = eta === "Arriving today" || eta === "Arriving tomorrow"
   return (
     <tr className={cn(
       "border-b border-border hover:bg-accent/30 transition-colors group",
@@ -460,13 +474,13 @@ function ShipmentRow({ shipment, onArchive, onUnarchive, isArchiving = false }: 
       </td>
       <td className="py-2.5 pr-3 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
         {eta ? (
-          <span className={cn("font-medium", (eta === "Arriving today" || eta === "Arriving tomorrow") && "text-amber-600 dark:text-amber-400")}>
+          <span className={cn("font-medium", isArrivingSoon && "text-amber-600 dark:text-amber-400")}>
             {eta}
           </span>
         ) : relativeTime(shipment.last_updated_at)}
       </td>
       <td className="py-2.5 text-right">
-        {/* Item 6: focus-within restores visibility at row level */}
+        {/* focus-within restores visibility at row level */}
         <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity focus-within:opacity-100">
           {onArchive && (
             <button
@@ -539,7 +553,7 @@ function ShipmentList({ shipments, onArchive, onUnarchive, archivingIds }: {
   )
 }
 
-// ── Empty state with onboarding (item 8) ─────────────────────────────────────
+// ── Empty state with onboarding (accepts optional onAdd for manual add) ───────
 
 function EmptyState({ onAdd }: { onAdd?: () => void }) {
   return (
@@ -586,12 +600,263 @@ function EmptyState({ onAdd }: { onAdd?: () => void }) {
         </li>
       </ol>
       {onAdd && (
-        <div className="mt-6">
-          <Button size="sm" onClick={onAdd}>
-            <Plus className="h-4 w-4 mr-1" /> Add Shipment Manually
-          </Button>
-        </div>
+        <Button size="sm" className="mt-6 gap-1.5" onClick={onAdd}>
+          <Plus className="h-4 w-4" /> Add Shipment manually
+        </Button>
       )}
+    </div>
+  )
+}
+
+// ── No matches + clear filters ────────────────────────────────────────────────
+
+function NoMatches({ onClearFilters }: { onClearFilters?: () => void }) {
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <p className="text-sm text-muted-foreground">No matches</p>
+      {onClearFilters && (
+        <button
+          onClick={onClearFilters}
+          className="text-xs text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none rounded-sm"
+        >
+          Clear all filters
+        </button>
+      )}
+    </div>
+  )
+}
+
+function sortKey(s: Shipment, field: SortField): string {
+  switch (field) {
+    case "added":   return s.first_seen_at ?? ""
+    case "updated": return s.last_updated_at ?? ""
+    case "name":    return (s.title ?? "￿").toLowerCase()
+    case "carrier": return (s.carrier ?? "￿").toLowerCase()
+  }
+}
+
+export default function Dashboard() {
+  const [active, setActive] = useState<Shipment[]>([])
+  const [delivered, setDelivered] = useState<Shipment[]>([])
+  const [archived, setArchived] = useState<Shipment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [showDelivered, setShowDelivered] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [archivingIds, setArchivingIds] = useState<Set<number>>(new Set())
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    (localStorage.getItem("dashboard-view") as ViewMode) ?? "grid"
+  )
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [bulkArchiving, setBulkArchiving] = useState(false)
+
+  const [search, setSearch] = useState("")
+  const [filterCarrier, setFilterCarrier] = useState("all")
+  const [filterStatus, setFilterStatus] = useState("all")
+  const [sortField, setSortField] = useState<SortField>("added")
+  const [sortDir, setSortDir] = useState<SortDir>("desc")
+
+  const toggleViewMode = () => {
+    setViewMode(prev => {
+      const next = prev === "grid" ? "list" : "grid"
+      localStorage.setItem("dashboard-view", next)
+      return next
+    })
+  }
+
+  const load = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setRefreshing(true)
+    try {
+      const [a, d, ar] = await Promise.all([
+        fetchShipments("active"),
+        fetchShipments("delivered"),
+        fetchShipments("archived"),
+      ])
+      setActive(a)
+      setDelivered(d)
+      setArchived(ar)
+      setLastRefresh(new Date())
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+    const interval = setInterval(() => load(), 60_000)
+    return () => clearInterval(interval)
+  }, [load])
+
+  // Celebration hook — tracks newly-delivered shipments
+  const allForCelebration = useMemo(() => [...active, ...delivered], [active, delivered])
+  const { toasts, dismissToast } = useDeliveredCelebration(allForCelebration)
+
+  const handleArchive = async (id: number) => {
+    setArchivingIds(prev => new Set(prev).add(id))
+    await new Promise(r => setTimeout(r, 380))
+    await archiveShipment(id, true)
+    setArchivingIds(prev => { const s = new Set(prev); s.delete(id); return s })
+    load()
+  }
+
+  const handleUnarchive = async (id: number) => {
+    await archiveShipment(id, false)
+    load()
+  }
+
+  const handleBulkArchive = async () => {
+    setBulkArchiving(true)
+    try {
+      await bulkArchiveDelivered()
+      await load()
+    } finally {
+      setBulkArchiving(false)
+    }
+  }
+
+  const allShipments = useMemo(() => [...active, ...delivered, ...archived], [active, delivered, archived])
+
+  const carrierOptions = useMemo(() => {
+    const seen = new Set<string>()
+    for (const s of allShipments) {
+      if (s.carrier) seen.add(s.carrier)
+    }
+    return Array.from(seen).sort()
+  }, [allShipments])
+
+  const isFiltered = search !== "" || filterCarrier !== "all" || filterStatus !== "all"
+
+  const clearFilters = useCallback(() => {
+    setSearch("")
+    setFilterCarrier("all")
+    setFilterStatus("all")
+  }, [])
+
+  const filterAndSort = useCallback((shipments: Shipment[]) => {
+    const q = search.toLowerCase()
+    let result = shipments.filter(s => {
+      if (filterCarrier !== "all" && s.carrier !== filterCarrier) return false
+      if (filterStatus !== "all" && s.current_state !== filterStatus) return false
+      if (q) {
+        const haystack = [
+          s.title,
+          s.carrier,
+          STATE_LABELS[s.current_state] ?? s.current_state,
+          s.first_seen_at,
+          s.last_updated_at,
+          s.last_event?.notes,
+          s.tracking_number,
+        ].filter(Boolean).join(" ").toLowerCase()
+        if (!haystack.includes(q)) return false
+      }
+      return true
+    })
+    result = [...result].sort((a, b) => {
+      const ka = sortKey(a, sortField)
+      const kb = sortKey(b, sortField)
+      const cmp = sortField === "name" || sortField === "carrier"
+        ? ka.localeCompare(kb)
+        : ka < kb ? -1 : ka > kb ? 1 : 0
+      return sortDir === "asc" ? cmp : -cmp
+    })
+    return result
+  }, [search, filterCarrier, filterStatus, sortField, sortDir])
+
+  const filteredActive = useMemo(() => filterAndSort(active), [filterAndSort, active])
+  const filteredDelivered = useMemo(() => filterAndSort(delivered), [filterAndSort, delivered])
+  const filteredArchived = useMemo(() => filterAndSort(archived), [filterAndSort, archived])
+
+  const total = active.length + delivered.length
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        {/* Content-aware skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
+            <ShipmentCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const SortDirIcon = sortDir === "asc" ? ArrowUp : sortDir === "desc" ? ArrowDown : ArrowUpDown
+
+  return (
+    <>
+      {showAddModal && (
+        <AddShipmentModal
+          onClose={() => setShowAddModal(false)}
+          onCreated={() => load()}
+        />
+      )}
+      <div className="p-4 md:p-6 max-w-5xl mx-auto">
+        {/* Delivery toasts */}
+        {toasts.length > 0 && (
+          <div className="mb-4 space-y-2" role="status" aria-live="polite">
+            {toasts.map(t => (
+              <DeliveryToastBanner key={t.id} toast={t} onDismiss={dismissToast} />
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-xl font-bold">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">
+              {total === 0 ? "No shipments" : `${active.length} active · ${delivered.length} delivered`}
+              {archived.length > 0 && ` · ${archived.length} archived`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setShowAddModal(true)}
+              className="gap-1.5"
+            >
+              <Plus className="h-4 w-4" />
+              Add
+            </Button>
+            <div className="flex flex-col items-end gap-0.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => load(true)}
+                disabled={refreshing}
+                title="Refresh"
+                aria-label="Refresh shipments"
+              >
+                <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+              </Button>
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                {refreshing ? "Syncing…" : `Last sync: ${relativeTime(lastRefresh.toISOString())}`}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Out for delivery hero banner */}
+        <OutForDeliveryBanner shipments={[...active, ...delivered]} />
+
+        {/* Filter / sort bar */}
+        {(total > 0 || archived.length > 0) && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            <div className="relative flex-1 min-w-[180px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
+            {/* Restore focus rings on SelectTrigger */}
+            <Select value={filterCarrier} onValueChange={setFilterCarrier}>
+              <SelectTrigger className="w-[140px] h-9 text-sm focus:ring-1 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring">
+                <SelectValue placeholder="Carrier" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All carriers</SelectItem>
@@ -611,7 +876,7 @@ function EmptyState({ onAdd }: { onAdd?: () => void }) {
                 ))}
               </SelectContent>
             </Select>
-            {/* Grouped sort control — item 6: restore focus ring */}
+            {/* Grouped sort control — with focus ring */}
             <div className="flex h-9 rounded-md border border-input overflow-hidden focus-within:ring-1 focus-within:ring-ring">
               <Select value={sortField} onValueChange={v => setSortField(v as SortField)}>
                 <SelectTrigger className="w-[120px] h-full border-0 rounded-none text-sm focus:ring-0 focus:ring-offset-0 focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0">
@@ -626,7 +891,7 @@ function EmptyState({ onAdd }: { onAdd?: () => void }) {
               </Select>
               <div className="w-px bg-input self-stretch" />
               <button
-                className="px-2.5 flex items-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="px-2.5 flex items-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 onClick={() => setSortDir((d: SortDir) => d === "asc" ? "desc" : "asc")}
                 title={sortDir === "asc" ? "Ascending" : "Descending"}
                 aria-label={sortDir === "asc" ? "Sort ascending" : "Sort descending"}
@@ -667,22 +932,20 @@ function EmptyState({ onAdd }: { onAdd?: () => void }) {
                   ) : (
                     <ShipmentList shipments={filteredActive} onArchive={handleArchive} archivingIds={archivingIds} />
                   )
-                ) : <NoMatches onClearFilters={isFiltered ? clearFilters : undefined} />
-              )}
-            </section>
-          )}
+                ) : <NoMatches onClearFilters={isFiltered ? clearFilters : undefined} />}
+              </section>
+            )}
 
-          {delivered.length > 0 && (
-            <section className="mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <button
-                  onClick={() => setShowDelivered(v => !v)}
-                  className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
-                >
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", showDelivered && "rotate-180")} />
-                  Delivered ({isFiltered ? `${filteredDelivered.length}/` : ""}{delivered.length})
-                </button>
-                {delivered.length > 0 && (
+            {delivered.length > 0 && (
+              <section className="mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    onClick={() => setShowDelivered(v => !v)}
+                    className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
+                  >
+                    <ChevronDown className={cn("h-4 w-4 transition-transform", showDelivered && "rotate-180")} />
+                    Delivered ({isFiltered ? `${filteredDelivered.length}/` : ""}{delivered.length})
+                  </button>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -694,53 +957,51 @@ function EmptyState({ onAdd }: { onAdd?: () => void }) {
                     <Archive className="h-3 w-3" />
                     {bulkArchiving ? "Archiving…" : "Archive all"}
                   </Button>
+                </div>
+                {showDelivered && (
+                  filteredDelivered.length > 0 ? (
+                    viewMode === "grid" ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredDelivered.map(s => (
+                          <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
+                        ))}
+                      </div>
+                    ) : (
+                      <ShipmentList shipments={filteredDelivered} onArchive={handleArchive} archivingIds={archivingIds} />
+                    )
+                  ) : <NoMatches onClearFilters={isFiltered ? clearFilters : undefined} />
                 )}
-              </div>
-              {showDelivered && (
-                filteredDelivered.length > 0 ? (
-                  viewMode === "grid" ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredDelivered.map(s => (
-                        <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
-                      ))}
-                    </div>
-                  ) : (
-                    <ShipmentList shipments={filteredDelivered} onArchive={handleArchive} archivingIds={archivingIds} />
-                  )
-                ) : <NoMatches onClearFilters={isFiltered ? clearFilters : undefined} />
-              )}
-            </section>
-          )}
+              </section>
+            )}
 
-          {archived.length > 0 && (
-            <section>
-              <button
-                onClick={() => setShowArchived(v => !v)}
-                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 hover:text-foreground transition-colors"
-              >
-                <ChevronDown className={cn("h-4 w-4 transition-transform", showArchived && "rotate-180")} />
-                <Archive className="h-3.5 w-3.5" />
-                Archived ({isFiltered ? `${filteredArchived.length}/` : ""}{archived.length})
-              </button>
-              {showArchived && (
-                filteredArchived.length > 0 ? (
-                  viewMode === "grid" ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredArchived.map(s => (
-                        <ShipmentCard key={s.id} shipment={s} onUnarchive={handleUnarchive} />
-                      ))}
-                    </div>
-                  ) : (
-                    <ShipmentList shipments={filteredArchived} onUnarchive={handleUnarchive} />
-                  )
-                ) : <NoMatches onClearFilters={isFiltered ? clearFilters : undefined} />
-              )}
-            </section>
-          )}
-        </>
-      )}
+            {archived.length > 0 && (
+              <section>
+                <button
+                  onClick={() => setShowArchived(v => !v)}
+                  className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 hover:text-foreground transition-colors"
+                >
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", showArchived && "rotate-180")} />
+                  <Archive className="h-3.5 w-3.5" />
+                  Archived ({isFiltered ? `${filteredArchived.length}/` : ""}{archived.length})
+                </button>
+                {showArchived && (
+                  filteredArchived.length > 0 ? (
+                    viewMode === "grid" ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredArchived.map(s => (
+                          <ShipmentCard key={s.id} shipment={s} onUnarchive={handleUnarchive} />
+                        ))}
+                      </div>
+                    ) : (
+                      <ShipmentList shipments={filteredArchived} onUnarchive={handleUnarchive} />
+                    )
+                  ) : <NoMatches onClearFilters={isFiltered ? clearFilters : undefined} />
+                )}
+              </section>
+            )}
+          </>
+        )}
       </div>
     </>
-
   )
 }
