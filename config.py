@@ -15,6 +15,10 @@ DHL_API_SECRET: str = os.getenv("DHL_API_SECRET", "")
 _cors_raw: str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://192.168.0.50:8900")
 CORS_ORIGINS: list[str] = [o.strip() for o in _cors_raw.split(",") if o.strip()]
 
+# API key for authenticating API requests (X-API-Key header).
+# When empty, authentication is disabled (trusted-network / reverse-proxy deployment).
+API_KEY: str = os.getenv("TRACKBOX_API_KEY", "")
+
 IMAP_HOST: str = os.getenv("IMAP_HOST", "")
 IMAP_PORT: int = int(os.getenv("IMAP_PORT", "993"))
 IMAP_USER: str = os.getenv("IMAP_USER", "")
