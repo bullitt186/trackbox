@@ -125,13 +125,13 @@ async def index(request: Request):
 
 
 @app.get("/shipments/{shipment_id}", response_class=HTMLResponse)
-async def detail(request: Request, shipment_id: int):
+async def detail(request: Request, shipment_id: int, updated: str | None = None):
     shipment = db.get_shipment(shipment_id)
     if not shipment:
         raise HTTPException(404)
     events = db.get_events(shipment_id)
     return templates.TemplateResponse(request, "detail.html", {
-        "shipment": shipment, "events": events, "states": VALID_STATES
+        "shipment": shipment, "events": events, "states": VALID_STATES, "flash": updated
     })
 
 
@@ -142,7 +142,7 @@ async def update_state(shipment_id: int, state: str = Form(...), notes: str = Fo
         raise HTTPException(404)
     db.update_shipment(shipment_id, {"current_state": state})
     db.add_event(shipment_id, state, notes or "Manual update", "manual")
-    return RedirectResponse(f"/shipments/{shipment_id}", status_code=303)
+    return RedirectResponse(f"/shipments/{shipment_id}?updated=State+updated", status_code=303)
 
 
 @app.post("/shipments/{shipment_id}/title")

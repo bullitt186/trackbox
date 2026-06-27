@@ -31,13 +31,15 @@
         .progress-step.done span { color: #333; }
         .progress-step.current .dot { border-color: #0066cc; background: #0066cc; box-shadow: 0 0 0 3px rgba(0,102,204,0.2); }
         .progress-step.current span { font-weight: 600; color: #0066cc; }
-        .delete-form { margin-top: 2rem; }
-        .delete-form button { background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; }
+        .delete-form { margin-top: 3rem; border-top: 1px solid #eee; padding-top: 1rem; }
+        .delete-form button { background: none; color: #999; border: 1px solid #ddd; padding: 0.4rem 0.8rem; border-radius: 3px; font-size: 0.8rem; }
+        .delete-form button:hover { color: #dc3545; border-color: #dc3545; }
     </style>
 </head>
 <body>
     {% set state_labels = {"unknown": "Unknown", "preparing": "Preparing", "shipped": "Shipped", "in_transit": "In Transit", "out_for_delivery": "Out for Delivery", "delivered": "Delivered", "delayed": "Delayed", "exception": "Exception"} %}
     <p><a href="/">← All shipments</a></p>
+    {% if flash %}<div style="background:#d4edda;color:#155724;padding:0.5rem 1rem;border-radius:4px;margin-bottom:1rem">{{ flash }}</div>{% endif %}
 
     <h1 style="display:inline">{{ shipment.title or "Shipment #" ~ shipment.id }}</h1>
     <form method="post" action="/shipments/{{ shipment.id }}/title" style="display:inline; margin-left:1rem">
@@ -78,7 +80,7 @@
         <h3>Update State</h3>
         <select name="state">
             {% for s in states %}
-            <option value="{{ s }}" {% if s == shipment.current_state %}selected{% endif %}>{{ s }}</option>
+            <option value="{{ s }}" {% if s == shipment.current_state %}selected{% endif %}>{{ state_labels.get(s, s) }}</option>
             {% endfor %}
         </select>
         <input type="text" name="notes" placeholder="Notes (optional)">
@@ -101,7 +103,7 @@
             <tr>
                 <td><span class="state state-{{ e.state }}">{{ state_labels.get(e.state, e.state) }}</span></td>
                 <td>{{ e.notes or "—" }}</td>
-                <td>{{ e.source }}</td>
+                <td title="{{ e.source }}">{% if e.source == "email" %}📧{% else %}✏️{% endif %}</td>
                 <td>{% if e.occurred_at %}<time datetime="{{ e.occurred_at }}">{{ e.occurred_at[:16] }}</time>{% else %}—{% endif %}</td>
             </tr>
             {% endfor %}
