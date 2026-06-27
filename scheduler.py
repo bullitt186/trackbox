@@ -229,8 +229,21 @@ class ScraperScheduler:
             )
 
 
+_last_manual_scrape: float = 0
+_MANUAL_SCRAPE_COOLDOWN = 6  # seconds, matches DHL 5s rate limit + safety
+
+
 async def scrape_single(shipment_id: int) -> dict:
     """Trigger an immediate scrape for a single shipment. Returns result info."""
+    global _last_manual_scrape
+    import time
+
+    elapsed = time.time() - _last_manual_scrape
+    if elapsed < _MANUAL_SCRAPE_COOLDOWN:
+        wait = int(_MANUAL_SCRAPE_COOLDOWN - elapsed) + 1
+        return {"error": f"Rate limited. Try again in {wait}s (min {_MANUAL_SCRAPE_COOLDOWN}s between manual scrapes)"}
+    _last_manual_scrape = time.time()
+
     shipment = db.get_shipment(shipment_id)
     if not shipment:
         return {"error": "Shipment not found"}
