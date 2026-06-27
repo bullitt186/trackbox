@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { fetchScrapeLog, fetchShipments, type ScrapeLogEntry, type Shipment } from "@/lib/api"
 import { CarrierIcon } from "@/components/CarrierIcon"
+import { ScrapeStatusIcon } from "@/components/ScrapeStatusIcon"
+import { relativeTime } from "@/lib/utils"
 
 interface ScraperOption {
   key: string
@@ -38,6 +40,15 @@ interface ScraperForm {
   activeKey: string
 }
 
+function SectionHeader({ label, description }: { label: string; description?: string }) {
+  return (
+    <div className="pt-2 pb-1">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+      {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+    </div>
+  )
+}
+
 const BASE = ""
 
 export default function Settings() {
@@ -59,7 +70,8 @@ export default function Settings() {
       fetch(`${BASE}/api/scrapers`).then(r => r.json()),
       fetchScrapeLog({ limit: 30 }),
       fetchShipments(),
-    ]).then(([settingsData, scrapersData, logData, shipmentsData]) => {
+      fetchShipments("archived"),
+    ]).then(([settingsData, scrapersData, logData, shipmentsData, archivedData]) => {
       setAllSettings(settingsData)
       setScraperStatus(scrapersData)
       setMqttEnabled(settingsData["mqtt_enabled"] === "true")
@@ -81,7 +93,7 @@ export default function Settings() {
 
       setRecentLog(logData)
       const map: Record<number, Shipment> = {}
-      for (const s of shipmentsData) map[s.id] = s
+      for (const s of [...shipmentsData, ...archivedData]) map[s.id] = s
       setShipmentMap(map)
       setLoading(false)
     })
@@ -131,7 +143,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5 pb-24">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Settings</h1>
         {scraperStatus?.scheduler_running && (
@@ -141,11 +153,14 @@ export default function Settings() {
         )}
       </div>
 
-      {/* Scraper Cards */}
+      {/* Scrapers section */}
+      <SectionHeader
+        label="Scrapers"
+        description="Carrier polling configuration and data retention."
+      />
       {scraperStatus?.scrapers.map(s => {
         const form = scraperForms[s.carrier]
         if (!form) return null
-        // Active scraper name for header display
         const activeName = s.available_scrapers.find(o => o.key === form.activeKey)?.name ?? s.name
         return (
           <Card key={s.carrier}>
@@ -169,12 +184,14 @@ export default function Settings() {
             <CardContent className="space-y-4">
               {/* Enable/Disable toggle */}
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Enable {s.carrier.toUpperCase()} Scraping</label>
+                <label className="text-sm font-medium">Enabled</label>
                 <button
                   onClick={() => updateForm(s.carrier, "enabled", !form.enabled)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     form.enabled ? "bg-primary" : "bg-muted"
                   }`}
+                  aria-checked={form.enabled}
+                  role="switch"
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -184,7 +201,7 @@ export default function Settings() {
                 </button>
               </div>
 
-              {/* Tracking method selector — only when multiple scrapers available */}
+              {/* Tracking method selector */}
               {s.available_scrapers.length > 1 && (
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Tracking Method</label>
@@ -206,7 +223,7 @@ export default function Settings() {
                 </div>
               )}
 
-              {/* API Key (DHL only, shown when API scraper is selected) */}
+              {/* API Key (DHL only) */}
               {form.apiKey !== undefined && form.activeKey === "dhl_api" && (
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">API Key</label>
@@ -260,10 +277,15 @@ export default function Settings() {
         )
       })}
 
-      {/* Notifications */}
+      {/* Notifications section */}
+      <SectionHeader
+        label="Notifications"
+        description="Push state changes to external systems via MQTT."
+      />
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Notifications — Home Assistant MQTT</CardTitle>
+          <CardTitle className="text-base">Notifications</CardTitle>
+          <CardDescription>Publish state changes via MQTT (e.g. Home Assistant auto-discovery)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-xs text-muted-foreground">
@@ -276,6 +298,8 @@ export default function Settings() {
             <button
               onClick={() => setMqttEnabled(v => !v)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${mqttEnabled ? "bg-primary" : "bg-muted"}`}
+              aria-checked={mqttEnabled}
+              role="switch"
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${mqttEnabled ? "translate-x-6" : "translate-x-1"}`} />
             </button>
@@ -312,24 +336,11 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {/* Save button */}
-      <div className="flex items-center gap-3">
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : "Save Settings"}
-        </Button>
-        {saved && (
-          <span className="text-sm text-emerald-600">Settings saved!</span>
-        )}
-      </div>
-
-      {/* Status info */}
-      {scraperStatus?.last_cycle_at && (
-        <p className="text-xs text-muted-foreground">
-          Last scrape cycle: {new Date(scraperStatus.last_cycle_at).toLocaleString()}
-        </p>
-      )}
-
-      {/* Recent Scrape Activity */}
+      {/* Activity section */}
+      <SectionHeader
+        label="Activity"
+        description="Recent carrier sync history."
+      />
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Recent Scrape Activity</CardTitle>
@@ -356,7 +367,7 @@ export default function Settings() {
                     return (
                       <tr key={entry.id} className="border-b border-border last:border-0">
                         <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">
-                          {entry.occurred_at ? new Date(entry.occurred_at).toLocaleString() : "-"}
+                          {entry.occurred_at ? relativeTime(entry.occurred_at) : "-"}
                         </td>
                         <td className="py-1.5 pr-3 whitespace-nowrap">
                           <Link
@@ -370,7 +381,7 @@ export default function Settings() {
                           {entry.carrier || "-"}
                         </td>
                         <td className="py-1.5 pr-3">
-                          <SettingsScrapeStatusIcon status={entry.status} />
+                          <ScrapeStatusIcon status={entry.status} />
                         </td>
                         <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">
                           {entry.duration_ms != null ? `${entry.duration_ms}ms` : "-"}
@@ -388,29 +399,20 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      <p className="text-xs text-muted-foreground text-center pt-2">
-        Carrier icons by{" "}
-        <a href="https://50north.de" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">50north.de</a>
-        {", "}
-        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">CC BY 4.0</a>
-      </p>
+      {/* Sticky save bar */}
+      <div className="sticky bottom-0 -mx-4 md:-mx-6 px-4 md:px-6 py-3 bg-background/95 backdrop-blur border-t border-border flex items-center justify-between z-10">
+        <p className="text-xs text-muted-foreground">
+          {scraperStatus?.last_cycle_at
+            ? `Last cycle: ${relativeTime(scraperStatus.last_cycle_at)}`
+            : "No cycle recorded yet"}
+        </p>
+        <div className="flex items-center gap-3">
+          {saved && <span className="text-sm text-emerald-600">Saved</span>}
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : "Save Settings"}
+          </Button>
+        </div>
+      </div>
     </div>
   )
-}
-
-function SettingsScrapeStatusIcon({ status }: { status: string }) {
-  switch (status) {
-    case "success":
-      return <span className="text-emerald-600" title="Success">{"✓"}</span>
-    case "no_change":
-      return <span className="text-muted-foreground" title="No change">{"—"}</span>
-    case "error":
-      return <span className="text-red-600" title="Error">{"✗"}</span>
-    case "timeout":
-      return <span className="text-amber-600" title="Timeout">{"⏱"}</span>
-    case "disabled":
-      return <span className="text-red-600" title="Disabled">{"⛔"}</span>
-    default:
-      return <span className="text-muted-foreground">?</span>
-  }
 }

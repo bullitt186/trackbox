@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Package, PackageCheck, Cpu, Activity, TrendingUp } from "lucide-react"
+import { Package, PackageCheck, Cpu, Activity, TrendingUp, AlertTriangle, Server } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { fetchShipments, fetchParsers, fetchHealth } from "@/lib/api"
 import type { Shipment } from "@/lib/api"
@@ -118,18 +118,24 @@ function carrierColor(idx: number): string {
 }
 
 export default function Stats() {
-  const [shipments, setShipments] = useState<Shipment[]>([])
+  const [activeShipments, setActiveShipments] = useState<Shipment[]>([])
+  const [deliveredShipments, setDeliveredShipments] = useState<Shipment[]>([])
+  const [archivedShipments, setArchivedShipments] = useState<Shipment[]>([])
   const [parserCount, setParserCount] = useState(0)
   const [health, setHealth] = useState<HealthData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
-      fetchShipments(),
+      fetchShipments("active"),
+      fetchShipments("delivered"),
+      fetchShipments("archived"),
       fetchParsers(),
       fetchHealth().catch(() => null),
-    ]).then(([s, p, h]) => {
-      setShipments(s)
+    ]).then(([a, d, ar, p, h]) => {
+      setActiveShipments(a)
+      setDeliveredShipments(d)
+      setArchivedShipments(ar)
       setParserCount(p.length)
       setHealth(h)
       setLoading(false)
@@ -148,15 +154,15 @@ export default function Stats() {
     )
   }
 
-  // Compute stats
-  const total = shipments.length
-  const active = shipments.filter(s => s.current_state !== "delivered").length
-  const delivered = shipments.filter(s => s.current_state === "delivered").length
-  const totalEvents = shipments.reduce((acc, s) => acc + (s.events?.length ?? 0), 0)
+  const allShipments = [...activeShipments, ...deliveredShipments, ...archivedShipments]
+  const total = allShipments.length
+  const active = activeShipments.length
+  const delivered = deliveredShipments.length
+  const stalled = activeShipments.filter(s => s.stalled).length
 
-  // State distribution
+  // State distribution (across all shipments)
   const stateMap: Record<string, number> = {}
-  for (const s of shipments) {
+  for (const s of allShipments) {
     stateMap[s.current_state] = (stateMap[s.current_state] ?? 0) + 1
   }
   const stateData = Object.entries(stateMap).map(([state, count]) => ({
@@ -167,7 +173,7 @@ export default function Stats() {
 
   // Carrier distribution
   const carrierMap: Record<string, number> = {}
-  for (const s of shipments) {
+  for (const s of allShipments) {
     const c = s.carrier ?? "Unknown"
     carrierMap[c] = (carrierMap[c] ?? 0) + 1
   }
@@ -191,14 +197,22 @@ export default function Stats() {
         <StatCard icon={Package} label="Total Shipments" value={total} />
         <StatCard icon={TrendingUp} label="Active" value={active} color="text-blue-500" />
         <StatCard icon={PackageCheck} label="Delivered" value={delivered} color="text-emerald-500" />
+        {stalled > 0 && (
+          <StatCard
+            icon={AlertTriangle}
+            label="Needs attention"
+            value={stalled}
+            color="text-amber-500"
+            sub="Stalled or no new events"
+          />
+        )}
         <StatCard icon={Cpu} label="Parsers" value={parserCount} />
-        <StatCard icon={Activity} label="Events" value={totalEvents} sub="across all shipments" />
         {health && (
           <StatCard
-            icon={Activity}
+            icon={Server}
             label="Uptime"
             value={formatUptime(health.uptime_seconds)}
-            sub={`v${health.version}`}
+            sub={`build ${health.version}`}
             color={health.status === "ok" ? "text-emerald-500" : "text-amber-500"}
           />
         )}

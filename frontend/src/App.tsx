@@ -90,6 +90,12 @@ export default function App() {
           <div className="p-3 border-t border-border flex justify-end">
             <ThemeToggle />
           </div>
+          <div className="hidden md:block px-4 pb-3 text-[10px] text-muted-foreground/60 leading-relaxed">
+            Icons by{" "}
+            <a href="https://50north.de" target="_blank" rel="noopener noreferrer" className="underline hover:text-muted-foreground">50north.de</a>
+            {", "}
+            <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" className="underline hover:text-muted-foreground">CC BY 4.0</a>
+          </div>
         </aside>
 
         {/* Main content */}

@@ -1,18 +1,18 @@
 import { useEffect, useState, useCallback } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, Link } from "react-router-dom"
 import {
-  ArrowLeft, ExternalLink, Copy, Check, Pencil, Trash2, X, Save, RefreshCw, Archive, ArchiveRestore,
+  ArrowLeft, ExternalLink, Copy, Check, Pencil, Trash2, X, Save, RefreshCw, Archive, ArchiveRestore, AlertTriangle, ChevronDown,
 } from "lucide-react"
 import * as Dialog from "@radix-ui/react-dialog"
 import * as Select from "@radix-ui/react-select"
-import { ChevronDown } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { StateBadge } from "@/components/StateBadge"
+import { ScrapeStatusIcon } from "@/components/ScrapeStatusIcon"
 import { fetchShipment, updateShipment, archiveShipment, deleteShipment, fetchScrapeLog, type Shipment, type ShipmentEvent, type ScrapeLogEntry } from "@/lib/api"
-import { relativeTime, STATE_LABELS, STATES, cn } from "@/lib/utils"
+import { smartDate, STATE_LABELS, STATES, cn } from "@/lib/utils"
 import { CarrierIcon } from "@/components/CarrierIcon"
 
 // Progress stepper state order
@@ -101,23 +101,6 @@ function SourceBadge({ source }: { source: string }) {
   )
 }
 
-function ScrapeStatusIcon({ status }: { status: string }) {
-  switch (status) {
-    case "success":
-      return <span className="text-emerald-600" title="Success">{"✓"}</span>
-    case "no_change":
-      return <span className="text-muted-foreground" title="No change">{"—"}</span>
-    case "error":
-      return <span className="text-red-600" title="Error">{"✗"}</span>
-    case "timeout":
-      return <span className="text-amber-600" title="Timeout">{"⏱"}</span>
-    case "disabled":
-      return <span className="text-red-600" title="Disabled">{"⛔"}</span>
-    default:
-      return <span className="text-muted-foreground">?</span>
-  }
-}
-
 function EventRow({ event }: { event: ShipmentEvent }) {
   return (
     <tr className="border-b border-border last:border-0 hover:bg-accent/30 transition-colors">
@@ -125,7 +108,7 @@ function EventRow({ event }: { event: ShipmentEvent }) {
         <StateBadge state={event.state} />
       </td>
       <td className="py-2.5 pr-4 text-sm text-muted-foreground">
-        {event.occurred_at ? relativeTime(event.occurred_at) : "—"}
+        {event.occurred_at ? smartDate(event.occurred_at) : "—"}
       </td>
       <td className="py-2.5 text-sm">{event.notes ?? "—"}</td>
       <td className="py-2.5 pl-4">
@@ -171,7 +154,6 @@ export default function ShipmentDetail() {
   const [notes, setNotes] = useState("")
   const [saving, setSaving] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
-  const [copiedTracking, setCopiedTracking] = useState(false)
   const [scraping, setScraping] = useState(false)
   const [scrapeResult, setScrapeResult] = useState<string | null>(null)
   const [scrapeLog, setScrapeLog] = useState<ScrapeLogEntry[]>([])
@@ -227,7 +209,6 @@ export default function ShipmentDetail() {
     setShipment(prev => prev ? { ...prev, current_state: updated.current_state } : prev)
     setNotes("")
     setSaving(false)
-    // Reload to get fresh events
     await load()
   }
 
@@ -278,14 +259,6 @@ export default function ShipmentDetail() {
     await load()
   }
 
-  const copyTracking = () => {
-    if (!shipment?.tracking_number) return
-    navigator.clipboard.writeText(shipment.tracking_number).then(() => {
-      setCopiedTracking(true)
-      setTimeout(() => setCopiedTracking(false), 1500)
-    })
-  }
-
   if (loading || !shipment) {
     return (
       <div className="p-6 max-w-3xl mx-auto space-y-4">
@@ -306,13 +279,14 @@ export default function ShipmentDetail() {
 
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
-        <button
-          onClick={() => navigate(-1)}
+        <Link
+          to="/"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Back to Dashboard"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
-        </button>
+        </Link>
         <div className="flex items-center gap-2">
           {shipment.tracking_link && (
             <Button variant="outline" size="sm" asChild>
@@ -380,7 +354,7 @@ export default function ShipmentDetail() {
                   </CardTitle>
                   <button
                     onClick={() => { setTitleDraft(shipment.title || ""); setEditingTitle(true) }}
-                    className="text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                    className="text-muted-foreground hover:text-foreground transition-colors opacity-40 hover:opacity-100"
                     aria-label="Edit title"
                     title="Edit title"
                   >
@@ -405,23 +379,16 @@ export default function ShipmentDetail() {
               </div>
             </MetaRow>
             <MetaRow label="Order Number" value={shipment.order_number} />
-            <MetaRow label="First Seen" value={relativeTime(shipment.first_seen_at)} />
-            <MetaRow label="Last Updated" value={relativeTime(shipment.last_updated_at)} />
+            <MetaRow label="First Seen" value={smartDate(shipment.first_seen_at)} />
+            <MetaRow label="Last carrier update" value={smartDate(shipment.last_updated_at)} />
             {shipment.tracking_number && (
               <div className="col-span-2">
                 <dt className="text-xs text-muted-foreground">Tracking Number</dt>
                 <dd className="flex items-center gap-1 mt-0.5">
-                  <code
-                    className="text-sm font-mono cursor-pointer hover:text-primary transition-colors"
-                    onClick={copyTracking}
-                    title="Click to copy"
-                  >
+                  <code className="text-sm font-mono select-all">
                     {shipment.tracking_number}
                   </code>
                   <CopyTrackingButton text={shipment.tracking_number} />
-                  {copiedTracking && (
-                    <span className="text-xs text-emerald-500 ml-1">Copied!</span>
-                  )}
                 </dd>
               </div>
             )}
@@ -436,48 +403,6 @@ export default function ShipmentDetail() {
           <span>This shipment is archived.</span>
           <button onClick={handleArchiveToggle} className="text-primary hover:underline text-xs">Unarchive</button>
         </div>
-      )}
-
-      {/* Stalled card */}
-      {shipment.stalled && (
-        <Card className="border-amber-300 dark:border-amber-700">
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium text-sm">
-              <span>⚠</span>
-              <span>Stalled — no further updates expected</span>
-            </div>
-            {shipment.stall_reason === "scrape_failures" && (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Scraping was disabled after {shipment.scrape_fail_count} consecutive failures.
-                  {shipment.last_scraped_at
-                    ? ` Last attempt: ${relativeTime(shipment.last_scraped_at)}.`
-                    : " No successful scrape recorded."}
-                </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    await fetch(`/api/shipments/${shipment.id}/scrape`, {
-                      method: "PUT",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ enabled: true }),
-                    })
-                    await load()
-                  }}
-                >
-                  Re-enable Scraping
-                </Button>
-              </>
-            )}
-            {shipment.stall_reason === "retention_expired" && (
-              <p className="text-sm text-muted-foreground">
-                The carrier's tracking data retention window has been exceeded.
-                No further updates are available from the carrier.
-              </p>
-            )}
-          </CardContent>
-        </Card>
       )}
 
       {/* Tracking retention note (delivered only) */}
@@ -502,12 +427,12 @@ export default function ShipmentDetail() {
         return null
       })()}
 
-      {/* Scraper status */}
-      {!isDelivered && shipment.scrape_enabled !== undefined && (
-        <Card>
+      {/* Source & sync card (merged: stall warning + scraper controls + scrape log) */}
+      {shipment.scrape_enabled !== undefined && (
+        <Card className={shipment.stalled ? "border-amber-300 dark:border-amber-700" : undefined}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Scraper</CardTitle>
+              <CardTitle className="text-base">Source &amp; sync</CardTitle>
               <div className="flex items-center gap-2">
                 {shipment.scrape_enabled ? (
                   <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 text-xs">
@@ -520,18 +445,42 @@ export default function ShipmentDetail() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* Stall warning inline */}
+            {shipment.stalled && (
+              <div className="flex items-start gap-2 text-amber-700 dark:text-amber-400 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-medium">No further updates expected</p>
+                  {shipment.stall_reason === "scrape_failures" && (
+                    <p className="text-muted-foreground text-xs">
+                      Scraping was disabled after {shipment.scrape_fail_count} consecutive failures.
+                      {shipment.last_scraped_at ? ` Last attempt: ${smartDate(shipment.last_scraped_at as string)}.` : ""}
+                    </p>
+                  )}
+                  {shipment.stall_reason === "retention_expired" && (
+                    <p className="text-muted-foreground text-xs">
+                      The carrier's tracking data retention window has been exceeded.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Stats grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <div>
-                <span className="text-xs text-muted-foreground block">Fail Count</span>
+                <span className="text-xs text-muted-foreground block">Fail count</span>
                 <span className="font-medium">{shipment.scrape_fail_count ?? 0}</span>
               </div>
               {shipment.last_scraped_at && (
                 <div>
-                  <span className="text-xs text-muted-foreground block">Last Scraped</span>
-                  <span className="font-medium">{relativeTime(shipment.last_scraped_at as string)}</span>
+                  <span className="text-xs text-muted-foreground block">Last sync</span>
+                  <span className="font-medium">{smartDate(shipment.last_scraped_at as string)}</span>
                 </div>
               )}
             </div>
+
+            {/* Actions */}
             <div className="flex items-center gap-2 pt-1">
               <Button
                 size="sm"
@@ -541,7 +490,7 @@ export default function ShipmentDetail() {
                 className="gap-1.5"
               >
                 <RefreshCw className={cn("h-3.5 w-3.5", scraping && "animate-spin")} />
-                {scraping ? "Scraping..." : "Scrape Now"}
+                {scraping ? "Scraping…" : "Scrape Now"}
               </Button>
               <Button
                 size="sm"
@@ -550,69 +499,82 @@ export default function ShipmentDetail() {
               >
                 {shipment.scrape_enabled ? "Disable" : "Enable"}
               </Button>
+              {shipment.stall_reason === "scrape_failures" && shipment.stalled && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    await fetch(`/api/shipments/${shipment.id}/scrape`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ enabled: true }),
+                    })
+                    await load()
+                  }}
+                >
+                  Re-enable
+                </Button>
+              )}
               {scrapeResult && (
                 <span className="text-xs text-muted-foreground">{scrapeResult}</span>
+              )}
+            </div>
+
+            {/* Collapsible scrape log */}
+            <div className="pt-1 border-t border-border">
+              <button
+                onClick={() => setScrapeLogOpen(!scrapeLogOpen)}
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+                aria-expanded={scrapeLogOpen}
+              >
+                <ChevronDown className={cn("h-4 w-4 transition-transform", scrapeLogOpen && "rotate-180")} />
+                Scrape Log
+              </button>
+              {scrapeLogOpen && (
+                <div className="mt-3">
+                  {scrapeLog.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No scrape log entries yet.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Time</th>
+                            <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Status</th>
+                            <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Duration</th>
+                            <th className="text-left py-1.5 font-medium text-muted-foreground">Message</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {scrapeLog.map(entry => (
+                            <tr key={entry.id} className="border-b border-border last:border-0">
+                              <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">
+                                {smartDate(entry.occurred_at)}
+                              </td>
+                              <td className="py-1.5 pr-3">
+                                <ScrapeStatusIcon status={entry.status} />
+                              </td>
+                              <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">
+                                {entry.duration_ms != null ? `${entry.duration_ms}ms` : "-"}
+                              </td>
+                              <td className="py-1.5 text-muted-foreground truncate max-w-[200px]" title={entry.message ?? undefined}>
+                                {entry.message ?? "-"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Scrape Log (collapsible) */}
-      {shipment.scrape_enabled !== undefined && (
-        <Card>
-          <CardHeader className="pb-2">
-            <button
-              onClick={() => setScrapeLogOpen(!scrapeLogOpen)}
-              className="flex items-center justify-between w-full text-left"
-            >
-              <CardTitle className="text-sm text-muted-foreground font-medium">Scrape Log</CardTitle>
-              <span className="text-xs text-muted-foreground">{scrapeLogOpen ? "Hide" : "Show"}</span>
-            </button>
-          </CardHeader>
-          {scrapeLogOpen && (
-            <CardContent>
-              {scrapeLog.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No scrape log entries yet.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Time</th>
-                        <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Status</th>
-                        <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Duration</th>
-                        <th className="text-left py-1.5 font-medium text-muted-foreground">Message</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {scrapeLog.map(entry => (
-                        <tr key={entry.id} className="border-b border-border last:border-0">
-                          <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">
-                            {relativeTime(entry.occurred_at)}
-                          </td>
-                          <td className="py-1.5 pr-3">
-                            <ScrapeStatusIcon status={entry.status} />
-                          </td>
-                          <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">
-                            {entry.duration_ms != null ? `${entry.duration_ms}ms` : "-"}
-                          </td>
-                          <td className="py-1.5 text-muted-foreground truncate max-w-[200px]" title={entry.message ?? undefined}>
-                            {entry.message ?? "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          )}
-        </Card>
-      )}
-
-      {/* State update */}
-      {!isDelivered && (
+      {/* State update — hidden for archived shipments */}
+      {!isDelivered && shipment.archived !== 1 && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Update Status</CardTitle>

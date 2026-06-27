@@ -18,6 +18,13 @@ export function relativeTime(dateStr: string | null): string {
   return d.toLocaleDateString()
 }
 
+export function smartDate(dateStr: string | null): string {
+  if (!dateStr) return ""
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000
+  if (diff < 604800) return relativeTime(dateStr)
+  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+}
+
 export const STATE_LABELS: Record<string, string> = {
   unknown: "Unknown",
   preparing: "Preparing",

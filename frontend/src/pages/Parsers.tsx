@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react"
-import { Trash2, ChevronDown, Cpu } from "lucide-react"
+import { useEffect, useState, useMemo } from "react"
+import { Trash2, ChevronDown, Cpu, Search } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { fetchParsers, deleteParser, type Parser } from "@/lib/api"
 import { relativeTime, cn } from "@/lib/utils"
 
@@ -36,7 +37,7 @@ function FieldMapView({ raw }: { raw: string }) {
   )
 }
 
-function ParserCard({ parser, onDelete }: { parser: Parser; onDelete: () => void }) {
+function ParserCard({ parser, onDelete, isDuplicate }: { parser: Parser; onDelete: () => void; isDuplicate: boolean }) {
   const [expanded, setExpanded] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -60,6 +61,11 @@ function ParserCard({ parser, onDelete }: { parser: Parser; onDelete: () => void
             <CardTitle className="text-base flex items-center gap-2">
               <Cpu className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="truncate">{parser.sender_domain}</span>
+              {keywords.length > 0 && (
+                <span className="text-muted-foreground font-normal text-sm truncate hidden sm:inline">
+                  · {keywords.slice(0, 2).join(", ")}{keywords.length > 2 ? "…" : ""}
+                </span>
+              )}
             </CardTitle>
             {parser.created_at && (
               <CardDescription className="mt-0.5">
@@ -99,6 +105,12 @@ function ParserCard({ parser, onDelete }: { parser: Parser; onDelete: () => void
             ))}
           </div>
         )}
+
+        {isDuplicate && (
+          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
+            Multiple parsers for this domain — first keyword match wins.
+          </p>
+        )}
       </CardHeader>
 
       <CardContent className="pt-0">
@@ -122,6 +134,7 @@ function ParserCard({ parser, onDelete }: { parser: Parser; onDelete: () => void
 export default function Parsers() {
   const [parsers, setParsers] = useState<Parser[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState("")
 
   const load = async () => {
     const data = await fetchParsers()
@@ -130,6 +143,23 @@ export default function Parsers() {
   }
 
   useEffect(() => { void load() }, [])
+
+  const domainCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const p of parsers) {
+      counts[p.sender_domain] = (counts[p.sender_domain] ?? 0) + 1
+    }
+    return counts
+  }, [parsers])
+
+  const filtered = useMemo(() => {
+    if (!search) return parsers
+    const q = search.toLowerCase()
+    return parsers.filter(p =>
+      p.sender_domain.toLowerCase().includes(q) ||
+      (p.subject_keywords || "").toLowerCase().includes(q)
+    )
+  }, [parsers, search])
 
   if (loading) {
     return (
@@ -150,7 +180,7 @@ export default function Parsers() {
         <p className="text-sm text-muted-foreground">
           {parsers.length === 0
             ? "No parsers configured"
-            : `${parsers.length} parser${parsers.length !== 1 ? "s" : ""} · email templates for extracting tracking info from incoming emails`}
+            : `${parsers.length} parser${parsers.length !== 1 ? "s" : ""} — email templates, one per sender, used to extract tracking info from incoming emails`}
         </p>
       </div>
 
@@ -163,15 +193,34 @@ export default function Parsers() {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {parsers.map(p => (
-            <ParserCard
-              key={p.id}
-              parser={p}
-              onDelete={() => setParsers(prev => prev.filter(x => x.id !== p.id))}
-            />
-          ))}
-        </div>
+        <>
+          {parsers.length > 5 && (
+            <div className="relative mb-4">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search domains or keywords"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
+          )}
+
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">No parser rules match this filter.</p>
+          ) : (
+            <div className="space-y-4">
+              {filtered.map(p => (
+                <ParserCard
+                  key={p.id}
+                  parser={p}
+                  isDuplicate={domainCounts[p.sender_domain] > 1}
+                  onDelete={() => setParsers(prev => prev.filter(x => x.id !== p.id))}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

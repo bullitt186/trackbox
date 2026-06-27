@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { Link } from "react-router-dom"
-import { ExternalLink, Copy, Check, RefreshCw, ChevronDown, Package, Archive, ArchiveRestore, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { ExternalLink, Copy, Check, RefreshCw, ChevronDown, Package, Archive, ArchiveRestore, Search, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle, LayoutGrid, List } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,6 +23,7 @@ const STATUS_ACCENT: Record<string, string> = {
 
 type SortField = "added" | "updated" | "name" | "carrier"
 type SortDir = "asc" | "desc"
+type ViewMode = "grid" | "list"
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -46,6 +47,26 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
+function StalledBadge({ reason }: { reason?: string | null }) {
+  const text =
+    reason === "scrape_failures" ? "Stalled · scrape errors" :
+    reason === "retention_expired" ? "Stalled · expired" :
+    "Stalled"
+  const tooltip =
+    reason === "scrape_failures" ? "Scraping disabled after repeated failures" :
+    reason === "retention_expired" ? "Carrier retention window exceeded — no more updates available" :
+    "No further updates expected"
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+      title={tooltip}
+    >
+      <AlertTriangle className="h-3 w-3" />
+      {text}
+    </span>
+  )
+}
+
 function ShipmentCard({ shipment, onArchive, onUnarchive, isArchiving = false }: {
   shipment: Shipment
   onArchive?: (id: number) => void
@@ -64,7 +85,7 @@ function ShipmentCard({ shipment, onArchive, onUnarchive, isArchiving = false }:
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <CarrierIcon carrier={shipment.carrier} size={20} />
-                <p className="font-semibold truncate">
+                <p className="font-semibold line-clamp-2 leading-tight">
                   {shipment.title || `Shipment #${shipment.id}`}
                 </p>
               </div>
@@ -84,18 +105,7 @@ function ShipmentCard({ shipment, onArchive, onUnarchive, isArchiving = false }:
               <div className="flex items-center gap-1.5 flex-wrap justify-end">
                 <StateBadge state={shipment.current_state} />
                 {shipment.stalled && (
-                  <span
-                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 cursor-help"
-                    title={
-                      shipment.stall_reason === "scrape_failures"
-                        ? `Scraping disabled after ${shipment.scrape_fail_count} failures`
-                        : shipment.stall_reason === "retention_expired"
-                        ? "Carrier retention window exceeded — no more updates available"
-                        : "No further updates expected"
-                    }
-                  >
-                    Stalled
-                  </span>
+                  <StalledBadge reason={shipment.stall_reason} />
                 )}
               </div>
               {shipment.tracking_link && (
@@ -117,9 +127,8 @@ function ShipmentCard({ shipment, onArchive, onUnarchive, isArchiving = false }:
               <span className="font-medium">Last update:</span> {shipment.last_event.notes}
             </p>
           )}
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>Started {relativeTime(shipment.first_seen_at)}</span>
-            <span>Updated {relativeTime(shipment.last_updated_at)}</span>
+          <div className="flex justify-end text-xs text-muted-foreground mt-1">
+            <span>Last carrier update {relativeTime(shipment.last_updated_at)}</span>
           </div>
           {/* Archive / Unarchive button */}
           {(onArchive || onUnarchive) && (
@@ -147,6 +156,115 @@ function ShipmentCard({ shipment, onArchive, onUnarchive, isArchiving = false }:
         </CardContent>
       </Card>
     </Link>
+    </div>
+  )
+}
+
+function ShipmentRow({ shipment, onArchive, onUnarchive, isArchiving = false }: {
+  shipment: Shipment
+  onArchive?: (id: number) => void
+  onUnarchive?: (id: number) => void
+  isArchiving?: boolean
+}) {
+  return (
+    <tr className={cn(
+      "border-b border-border hover:bg-accent/30 transition-colors group",
+      isArchiving && "opacity-50"
+    )}>
+      <td className="py-2.5 pr-3">
+        <Link to={`/shipments/${shipment.id}`} className="flex items-center gap-2 hover:text-primary">
+          <CarrierIcon carrier={shipment.carrier} size={16} />
+          <span className="font-medium text-sm line-clamp-1">
+            {shipment.title || `Shipment #${shipment.id}`}
+          </span>
+          {shipment.stalled && (
+            <span title="Stalled"><AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" /></span>
+          )}
+        </Link>
+      </td>
+      <td className="py-2.5 pr-3">
+        <StateBadge state={shipment.current_state} />
+      </td>
+      <td className="py-2.5 pr-3 text-sm text-muted-foreground">
+        {shipment.carrier ?? "—"}
+      </td>
+      <td className="py-2.5 pr-3">
+        {shipment.tracking_number && (
+          <code className="text-xs font-mono text-muted-foreground">{shipment.tracking_number}</code>
+        )}
+      </td>
+      <td className="py-2.5 pr-3 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+        {relativeTime(shipment.last_updated_at)}
+      </td>
+      <td className="py-2.5 text-right">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onArchive && (
+            <button
+              onClick={e => { e.preventDefault(); e.stopPropagation(); onArchive(shipment.id) }}
+              className="text-muted-foreground hover:text-foreground p-1"
+              title="Archive"
+            >
+              <Archive className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {onUnarchive && (
+            <button
+              onClick={e => { e.preventDefault(); e.stopPropagation(); onUnarchive(shipment.id) }}
+              className="text-muted-foreground hover:text-foreground p-1"
+              title="Unarchive"
+            >
+              <ArchiveRestore className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {shipment.tracking_link && (
+            <a
+              href={shipment.tracking_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="text-muted-foreground hover:text-primary p-1"
+              title="Track"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+function ShipmentList({ shipments, onArchive, onUnarchive, archivingIds }: {
+  shipments: Shipment[]
+  onArchive?: (id: number) => void
+  onUnarchive?: (id: number) => void
+  archivingIds?: Set<number>
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-border">
+            <th className="text-left py-2 pr-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Shipment</th>
+            <th className="text-left py-2 pr-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
+            <th className="text-left py-2 pr-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Carrier</th>
+            <th className="text-left py-2 pr-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tracking</th>
+            <th className="text-left py-2 pr-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Updated</th>
+            <th className="text-right py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {shipments.map(s => (
+            <ShipmentRow
+              key={s.id}
+              shipment={s}
+              onArchive={onArchive}
+              onUnarchive={onUnarchive}
+              isArchiving={archivingIds?.has(s.id)}
+            />
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -186,12 +304,23 @@ export default function Dashboard() {
   const [showArchived, setShowArchived] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
   const [archivingIds, setArchivingIds] = useState<Set<number>>(new Set())
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    (localStorage.getItem("dashboard-view") as ViewMode) ?? "grid"
+  )
 
   const [search, setSearch] = useState("")
   const [filterCarrier, setFilterCarrier] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
   const [sortField, setSortField] = useState<SortField>("added")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
+
+  const toggleViewMode = () => {
+    setViewMode(prev => {
+      const next = prev === "grid" ? "list" : "grid"
+      localStorage.setItem("dashboard-view", next)
+      return next
+    })
+  }
 
   const load = useCallback(async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true)
@@ -300,19 +429,23 @@ export default function Dashboard() {
           <p className="text-sm text-muted-foreground">
             {total === 0 ? "No shipments" : `${active.length} active · ${delivered.length} delivered`}
             {archived.length > 0 && ` · ${archived.length} archived`}
-            {" · "}<span className="tabular-nums">refreshed {relativeTime(lastRefresh.toISOString())}</span>
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => load(true)}
-          disabled={refreshing}
-          title="Refresh"
-          aria-label="Refresh shipments"
-        >
-          <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-        </Button>
+        <div className="flex flex-col items-end gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => load(true)}
+            disabled={refreshing}
+            title="Refresh"
+            aria-label="Refresh shipments"
+          >
+            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+          </Button>
+          <span className="text-[11px] text-muted-foreground tabular-nums">
+            {refreshing ? "Syncing…" : `Last sync: ${relativeTime(lastRefresh.toISOString())}`}
+          </span>
+        </div>
       </div>
 
       {/* Filter / sort bar */}
@@ -349,25 +482,39 @@ export default function Dashboard() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={sortField} onValueChange={v => setSortField(v as SortField)}>
-            <SelectTrigger className="w-[130px] h-9 text-sm">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="added">Added</SelectItem>
-              <SelectItem value="updated">Updated</SelectItem>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="carrier">Carrier</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Grouped sort control */}
+          <div className="flex h-9 rounded-md border border-input overflow-hidden">
+            <Select value={sortField} onValueChange={v => setSortField(v as SortField)}>
+              <SelectTrigger className="w-[120px] h-full border-0 rounded-none text-sm focus:ring-0 focus:ring-offset-0">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="added">Added</SelectItem>
+                <SelectItem value="updated">Updated</SelectItem>
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="carrier">Carrier</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="w-px bg-input self-stretch" />
+            <button
+              className="px-2.5 flex items-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              onClick={() => setSortDir((d: SortDir) => d === "asc" ? "desc" : "asc")}
+              title={sortDir === "asc" ? "Ascending" : "Descending"}
+              aria-label={sortDir === "asc" ? "Sort ascending" : "Sort descending"}
+            >
+              <SortDirIcon className="h-4 w-4" />
+            </button>
+          </div>
+          {/* View mode toggle */}
           <Button
             variant="ghost"
             size="icon"
             className="h-9 w-9"
-            onClick={() => setSortDir((d: SortDir) => d === "asc" ? "desc" : "asc")}
-            title={sortDir === "asc" ? "Ascending" : "Descending"}
+            onClick={toggleViewMode}
+            title={viewMode === "grid" ? "Switch to list view" : "Switch to grid view"}
+            aria-label={viewMode === "grid" ? "Switch to list view" : "Switch to grid view"}
           >
-            <SortDirIcon className="h-4 w-4" />
+            {viewMode === "grid" ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
           </Button>
         </div>
       )}
@@ -382,11 +529,15 @@ export default function Dashboard() {
                 Active ({isFiltered ? `${filteredActive.length}/` : ""}{active.length})
               </h2>
               {filteredActive.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredActive.map(s => (
-                    <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
-                  ))}
-                </div>
+                viewMode === "grid" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredActive.map(s => (
+                      <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
+                    ))}
+                  </div>
+                ) : (
+                  <ShipmentList shipments={filteredActive} onArchive={handleArchive} archivingIds={archivingIds} />
+                )
               ) : <NoMatches />}
             </section>
           )}
@@ -402,11 +553,15 @@ export default function Dashboard() {
               </button>
               {showDelivered && (
                 filteredDelivered.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredDelivered.map(s => (
-                      <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
-                    ))}
-                  </div>
+                  viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredDelivered.map(s => (
+                        <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
+                      ))}
+                    </div>
+                  ) : (
+                    <ShipmentList shipments={filteredDelivered} onArchive={handleArchive} archivingIds={archivingIds} />
+                  )
                 ) : <NoMatches />
               )}
             </section>
@@ -424,11 +579,15 @@ export default function Dashboard() {
               </button>
               {showArchived && (
                 filteredArchived.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredArchived.map(s => (
-                      <ShipmentCard key={s.id} shipment={s} onUnarchive={handleUnarchive} />
-                    ))}
-                  </div>
+                  viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredArchived.map(s => (
+                        <ShipmentCard key={s.id} shipment={s} onUnarchive={handleUnarchive} />
+                      ))}
+                    </div>
+                  ) : (
+                    <ShipmentList shipments={filteredArchived} onUnarchive={handleUnarchive} />
+                  )
                 ) : <NoMatches />
               )}
             </section>
