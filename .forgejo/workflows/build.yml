@@ -25,7 +25,7 @@ jobs:
 
           # Checkout
           rm -rf /tmp/trackbox-ci
-          git clone --depth 1 http://192.168.0.2:3002/bullitt/trackbox.git /tmp/trackbox-ci
+          git clone --depth 1 https://git.stahmer.net/bullitt/trackbox.git /tmp/trackbox-ci
           cd /tmp/trackbox-ci
           SHA=$(git rev-parse --short HEAD)
 
@@ -67,9 +67,12 @@ jobs:
           docker push git.stahmer.net/bullitt/trackbox:v${VERSION}
           docker push git.stahmer.net/bullitt/trackbox:latest
 
-          # Pre-deploy backup
-          ssh -o StrictHostKeyChecking=no docker@192.168.0.50 \
-            /srv/docker-data/volumes/trackbox/scripts/backup.sh || true
+          # Pre-deploy backup via Docker (no ssh/sqlite3 needed in runner)
+          BACKUP_TS=$(date +%Y%m%d_%H%M%S)
+          docker run --rm \
+            -v /srv/docker-data/volumes/trackbox:/data \
+            alpine sh -c "mkdir -p /data/backups && cp /data/trackbox.db /data/backups/trackbox_${BACKUP_TS}.db && ls -t /data/backups/trackbox_*.db | tail -n +8 | xargs rm -f 2>/dev/null || true" \
+            2>/dev/null || true
 
           # Deploy via Komodo
           curl -sf -X POST "http://192.168.0.2:9120/execute" \
@@ -103,7 +106,7 @@ jobs:
           [ "${healthy}" = "1" ] || { echo "Health check timed out"; exit 1; }
 
           # Create semver tag via Forgejo API (no git push needed)
-          curl -sf -X POST "http://192.168.0.2:3002/api/v1/repos/bullitt/trackbox/tags" \
+          curl -sf -X POST "https://git.stahmer.net/api/v1/repos/bullitt/trackbox/tags" \
             -H "Authorization: token ${REGISTRY_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"tag_name\":\"v${VERSION}\",\"target\":\"${SHA}\",\"message\":\"v${VERSION}\"}" 2>/dev/null || true
@@ -114,15 +117,15 @@ jobs:
           else
             NOTES="- Initial release"
           fi
-          NOTES_JSON=$(printf '%s' "${NOTES}" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')
-          curl -sf -X POST "http://192.168.0.2:3002/api/v1/repos/bullitt/trackbox/releases" \
+          NOTES_JSON=$(printf '"%s"' "$(printf '%s' "${NOTES}" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/g' | tr -d '\n' | sed 's/\\n$//')")
+          curl -sf -X POST "https://git.stahmer.net/api/v1/repos/bullitt/trackbox/releases" \
             -H "Authorization: token ${REGISTRY_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"tag_name\":\"v${VERSION}\",\"name\":\"v${VERSION}\",\"body\":${NOTES_JSON},\"draft\":false}" || true
 
           # Tag successful deploy
           DEPLOY_TAG="deploy-$(date +%Y%m%d)-${SHA}"
-          curl -sf -X POST "http://192.168.0.2:3002/api/v1/repos/bullitt/trackbox/tags" \
+          curl -sf -X POST "https://git.stahmer.net/api/v1/repos/bullitt/trackbox/tags" \
             -H "Authorization: token ${REGISTRY_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"tag_name\":\"${DEPLOY_TAG}\",\"target\":\"${SHA}\",\"message\":\"Deployed v${VERSION} (${SHA})\"}" || true
