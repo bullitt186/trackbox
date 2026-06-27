@@ -14,3 +14,7 @@ build:
 
 lock:
 	source .venv/bin/activate && pip freeze > requirements.lock
+
+openapi:
+	source .venv/bin/activate && python3 -c "from main import app; import json; json.dump(app.openapi(), open('openapi.json','w'), indent=2)"
+
