@@ -1,4 +1,5 @@
 import json
+import logging
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -6,6 +7,8 @@ from datetime import datetime, timezone
 import config
 
 DB_PATH = config.DATABASE_PATH
+
+_log = logging.getLogger("trackbox.db")
 
 
 def get_conn() -> sqlite3.Connection:
@@ -26,19 +29,48 @@ def get_db():
         conn.close()
 
 
-def init_db():
-    conn = get_conn()
-    conn.executescript("""
-        -- Migration: add message_id to events if missing
-        CREATE TABLE IF NOT EXISTS _migrations (id INTEGER PRIMARY KEY, name TEXT UNIQUE);
-    """)
+def _migration_applied(conn: sqlite3.Connection, name: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM _migrations WHERE name = ?", (name,)
+    ).fetchone()
+    return row is not None
+
+
+def _run_migration(conn: sqlite3.Connection, name: str, sql: str) -> None:
+    """Run a single DDL migration and record it in _migrations.
+
+    Skips silently if already applied.  Raises on any error — the caller
+    (init_db) should let the exception propagate so a bad deploy crashes fast
+    rather than leaving the schema in an indeterminate state.
+    """
+    if _migration_applied(conn, name):
+        return
+    _log.info("Applying migration: %s", name)
     try:
-        conn.execute("ALTER TABLE events ADD COLUMN message_id TEXT")
-        conn.execute("INSERT OR IGNORE INTO _migrations (name) VALUES ('add_message_id')")
+        conn.execute(sql)
+        conn.execute(
+            "INSERT INTO _migrations (name, applied_at) VALUES (?, ?)",
+            (name, _now()),
+        )
         conn.commit()
+        _log.info("Migration applied: %s", name)
     except Exception:
-        pass
+        conn.rollback()
+        _log.exception("Migration FAILED: %s — rolling back", name)
+        raise
+
+
+def init_db() -> None:
+    conn = get_conn()
+
+    # Bootstrap: create the _migrations tracking table and all base tables.
+    # This block is idempotent (CREATE TABLE IF NOT EXISTS).
     conn.executescript("""
+        CREATE TABLE IF NOT EXISTS _migrations (
+            id INTEGER PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL,
+            applied_at TEXT
+        );
         CREATE TABLE IF NOT EXISTS shipments (
             id INTEGER PRIMARY KEY,
             title TEXT,
@@ -56,8 +88,7 @@ def init_db():
             state TEXT,
             notes TEXT,
             source TEXT,
-            occurred_at TEXT,
-            message_id TEXT
+            occurred_at TEXT
         );
         CREATE TABLE IF NOT EXISTS parsers (
             id INTEGER PRIMARY KEY,
@@ -84,30 +115,75 @@ def init_db():
             occurred_at TEXT
         );
     """)
-    # Migration: add scraping and archive columns to shipments
-    for col, default in [
-        ("scrape_enabled", "1"),
-        ("scrape_fail_count", "0"),
-        ("last_scraped_at", "NULL"),
-        ("archived", "0"),
-    ]:
-        try:
-            col_type = "TEXT" if col == "last_scraped_at" else "INTEGER"
-            conn.execute(f"ALTER TABLE shipments ADD COLUMN {col} {col_type} DEFAULT {default}")
-            conn.commit()
-        except Exception:
-            pass
-    # Migration: fix state inconsistencies (delivered in events but not in current_state)
-    rows = conn.execute("""
-        SELECT s.id, s.current_state,
-               (SELECT e.state FROM events e WHERE e.shipment_id = s.id ORDER BY e.occurred_at DESC LIMIT 1) as last_event_state
-        FROM shipments s
-        WHERE s.current_state != 'delivered'
-    """).fetchall()
-    for row in rows:
-        if row["last_event_state"] == "delivered":
-            conn.execute("UPDATE shipments SET current_state = 'delivered' WHERE id = ?", (row["id"],))
+
+    # Seed baseline row for the very first migration that pre-dated the runner.
+    # If it already exists (pre-runner schema), leave it alone.  If it doesn't,
+    # record it as already applied so the runner below won't try to re-add the
+    # column to a schema that already has it.
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO _migrations (name, applied_at)
+        VALUES ('add_message_id', ?)
+        """,
+        (_now(),),
+    )
     conn.commit()
+
+    # --- Versioned, append-only migration list ---
+    # To add a new migration: append a _run_migration() call below.
+    # Never modify or reorder existing entries.
+
+    _run_migration(
+        conn,
+        "add_message_id",
+        "ALTER TABLE events ADD COLUMN message_id TEXT",
+    )
+    _run_migration(
+        conn,
+        "add_scrape_enabled",
+        "ALTER TABLE shipments ADD COLUMN scrape_enabled INTEGER DEFAULT 1",
+    )
+    _run_migration(
+        conn,
+        "add_scrape_fail_count",
+        "ALTER TABLE shipments ADD COLUMN scrape_fail_count INTEGER DEFAULT 0",
+    )
+    _run_migration(
+        conn,
+        "add_last_scraped_at",
+        "ALTER TABLE shipments ADD COLUMN last_scraped_at TEXT",
+    )
+    _run_migration(
+        conn,
+        "add_archived",
+        "ALTER TABLE shipments ADD COLUMN archived INTEGER DEFAULT 0",
+    )
+
+    # Data-fix migration: ensure current_state = 'delivered' whenever the most
+    # recent event says delivered but the shipment row hasn't been updated yet.
+    if not _migration_applied(conn, "fix_delivered_state"):
+        _log.info("Applying migration: fix_delivered_state")
+        rows = conn.execute("""
+            SELECT s.id,
+                   (SELECT e.state FROM events e
+                    WHERE e.shipment_id = s.id
+                    ORDER BY e.occurred_at DESC LIMIT 1) AS last_event_state
+            FROM shipments s
+            WHERE s.current_state != 'delivered'
+        """).fetchall()
+        for row in rows:
+            if row["last_event_state"] == "delivered":
+                conn.execute(
+                    "UPDATE shipments SET current_state = 'delivered' WHERE id = ?",
+                    (row["id"],),
+                )
+        conn.execute(
+            "INSERT INTO _migrations (name, applied_at) VALUES ('fix_delivered_state', ?)",
+            (_now(),),
+        )
+        conn.commit()
+        _log.info("Migration applied: fix_delivered_state")
+
     conn.close()
 
 

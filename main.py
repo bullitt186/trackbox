@@ -14,6 +14,7 @@ load_dotenv()
 
 _START_TIME = time.time()
 
+import config as _cfg
 import db
 import settings as app_settings
 from imap_poller import IMAPPoller
@@ -33,7 +34,7 @@ VALID_STATES = [
 app = FastAPI(title="Trackbox")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cfg.CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -68,6 +69,9 @@ async def startup():
 
     from scrapers import list_scrapers as _ls
     setup_logging()
+    # Validate config and DB writability before touching anything else.
+    # Raises RuntimeError on critical failure — uvicorn will exit and CI catches it.
+    _cfg.validate_config()
     db.init_db()
     app_settings.init_settings()
     ingest_set_notifier(mqtt_notifier)
@@ -496,15 +500,6 @@ if not _HAS_FRONTEND:
     async def delete_shipment(shipment_id: int):
         db.delete_shipment(shipment_id)
         return RedirectResponse("/", status_code=303)
-
-
-@app.on_event("startup")
-def validate_env():
-    """Warn about missing optional config."""
-    import logging  # noqa: E402
-    log = logging.getLogger("trackbox.startup")
-    if not os.getenv("OPENAI_API_KEY"):
-        log.warning("OPENAI_API_KEY not set - AI extraction will fail")
 
 
 # SPA catch-all: serve React frontend for client-side routing
