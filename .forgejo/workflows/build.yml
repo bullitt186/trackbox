@@ -1,4 +1,4 @@
-name: Build and Push
+name: Build, Test, Deploy
 
 on:
   push:
@@ -8,33 +8,40 @@ jobs:
   build:
     runs-on: docker-build
     steps:
+      - name: Test
+        run: |
+          set -ex
+          rm -rf /tmp/trackbox-ci
+          git clone --depth 1 http://192.168.0.2:3002/bullitt/trackbox.git /tmp/trackbox-ci
+          cd /tmp/trackbox-ci
+          pip install --quiet -r requirements.txt -r requirements-dev.txt
+          pytest tests/ -q
+
       - name: Build and push image
         env:
           REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
         run: |
           set -ex
-          rm -rf /tmp/trackbox-ci
-          git clone --depth 1 http://192.168.0.2:3002/bullitt/trackbox.git /tmp/trackbox-ci
+          cd /tmp/trackbox-ci
           echo "${REGISTRY_TOKEN}" | docker login git.stahmer.net -u bullitt --password-stdin
-          docker build -t git.stahmer.net/bullitt/trackbox:latest /tmp/trackbox-ci
+          docker build -t git.stahmer.net/bullitt/trackbox:latest .
           docker push git.stahmer.net/bullitt/trackbox:latest
           docker tag git.stahmer.net/bullitt/trackbox:latest git.stahmer.lan/bullitt/trackbox:latest
-          rm -rf /tmp/trackbox-ci
 
       - name: Deploy to production
         env:
           KOMODO_KEY: ${{ secrets.KOMODO_KEY }}
           KOMODO_SECRET: ${{ secrets.KOMODO_SECRET }}
         run: |
-          apk add --no-cache curl > /dev/null 2>&1 || true
-          # Pull new image and recreate trackbox container
           docker pull git.stahmer.net/bullitt/trackbox:latest
           docker stop trackbox 2>/dev/null || true
           docker rm trackbox 2>/dev/null || true
-          # Trigger Komodo to redeploy n8n stack (recreates trackbox)
           curl -sf -X POST "http://192.168.0.2:9120/execute" \
             -H "Content-Type: application/json" \
             -H "X-Api-Key: ${KOMODO_KEY}" \
             -H "X-Api-Secret: ${KOMODO_SECRET}" \
             -d '{"type":"DeployStack","params":{"stack":"n8n"}}'
           echo "Deploy triggered"
+
+      - name: Cleanup
+        run: rm -rf /tmp/trackbox-ci
