@@ -54,10 +54,19 @@ jobs:
           sleep 25
           for i in 1 2 3 4 5; do
             if curl -sf http://192.168.0.50:8900/health > /dev/null 2>&1; then
+              # Smoke test with a realistic tracking email
               RESULT=$(curl -sf -X POST http://192.168.0.50:8900/ingest \
                 -H "Content-Type: application/json" \
-                -d "{\"from\":\"ci@test\",\"subject\":\"CI smoke\",\"body\":\"ok\",\"message_id\":\"ci-${SHA}-$$@test\"}")
-              echo "${RESULT}" | grep -q '"action"' && break
+                -d "{\"from\":\"noreply@dhl.de\",\"subject\":\"CI Test Sendung\",\"body\":\"Sendungsnummer 00000000000000000000\",\"message_id\":\"ci-${SHA}-$$@test\",\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}")
+              echo "Smoke: ${RESULT}"
+              echo "${RESULT}" | grep -q '"action"' || { echo "Smoke test failed"; exit 1; }
+              # Cleanup: delete test shipment
+              SHIP_ID=$(echo "${RESULT}" | sed -n 's/.*"shipment_id":\([0-9]*\).*/\1/p')
+              if [ -n "${SHIP_ID}" ] && [ "${SHIP_ID}" != "null" ]; then
+                curl -sf -X DELETE "http://192.168.0.50:8900/api/shipments/${SHIP_ID}" > /dev/null
+                echo "Cleaned up test shipment #${SHIP_ID}"
+              fi
+              break
             fi
             sleep 10
           done

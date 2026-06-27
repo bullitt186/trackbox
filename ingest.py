@@ -87,6 +87,13 @@ def process_email(email: dict) -> dict:
 
     status = extracted.get("status", "unknown")
 
+    # Reject if nothing trackable was extracted
+    if not any([extracted.get("tracking_number"), extracted.get("order_number"), extracted.get("carrier")]):
+        return {
+            "shipment_id": None, "state": None, "action": "rejected",
+            "parser_status": parser_status, "reason": "not a tracking email",
+        }
+
     # Match to existing shipment
     shipment = db.find_shipment(
         extracted.get("tracking_number"),

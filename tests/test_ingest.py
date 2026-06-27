@@ -147,3 +147,25 @@ def test_delayed_allowed_from_non_terminal():
     assert should_update_state("in_transit", "delayed") is True
     assert should_update_state("shipped", "exception") is True
     assert should_update_state("out_for_delivery", "delayed") is True
+
+
+def test_rejects_non_tracking_email():
+    """Emails with no tracking data should be rejected."""
+    import tempfile
+
+    import db
+    from ingest import process_email
+    tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+    db.DB_PATH = tmp.name
+    db.init_db()
+    result = process_email({
+        "from": "random@person.com",
+        "subject": "Hello there",
+        "body": "Just saying hi",
+        "message_id": "reject-test@test"
+    })
+    assert result["action"] == "rejected"
+    assert result["shipment_id"] is None
+    import os
+    os.unlink(tmp.name)
+    assert result["shipment_id"] is None

@@ -93,9 +93,10 @@ function ShipmentCard({ shipment }: { shipment: Shipment }) {
               {shipment.last_event.notes}
             </p>
           )}
-          <p className="text-xs text-muted-foreground mt-1">
-            Updated {relativeTime(shipment.last_updated_at)}
-          </p>
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>Started {relativeTime(shipment.first_seen_at)}</span>
+            <span>Updated {relativeTime(shipment.last_updated_at)}</span>
+          </div>
         </CardContent>
       </Card>
     </Link>
