@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime, timezone
 
 import config
@@ -13,6 +14,16 @@ def get_conn() -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
+
+
+@contextmanager
+def get_db():
+    """Context manager that auto-closes the connection."""
+    conn = get_conn()
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 def init_db():
