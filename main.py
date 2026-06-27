@@ -1,4 +1,5 @@
 import os
+import time
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, HTTPException, Request
@@ -10,7 +11,6 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
-import time
 _START_TIME = time.time()
 
 import db
