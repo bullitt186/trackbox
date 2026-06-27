@@ -130,3 +130,20 @@ def test_tracking_number_cleanup_handles_none_match():
     # Tracking number that starts with non-word char would fail before fix
     # Now it should not crash
     assert True  # The fix is in the code; this documents the scenario
+
+
+def test_delivered_is_terminal():
+    """Delivered state cannot be regressed to delayed or exception."""
+    from ingest import should_update_state
+    assert should_update_state("delivered", "delayed") is False
+    assert should_update_state("delivered", "exception") is False
+    assert should_update_state("delivered", "in_transit") is False
+    assert should_update_state("delivered", "shipped") is False
+
+
+def test_delayed_allowed_from_non_terminal():
+    """Delayed/exception allowed from in_transit, shipped, etc."""
+    from ingest import should_update_state
+    assert should_update_state("in_transit", "delayed") is True
+    assert should_update_state("shipped", "exception") is True
+    assert should_update_state("out_for_delivery", "delayed") is True

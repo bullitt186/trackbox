@@ -137,6 +137,8 @@ def process_email(email: dict) -> dict:
 
 
 def should_update_state(current: str, new: str) -> bool:
+    if current == "delivered":
+        return False
     if new in ("delayed", "exception"):
         return True
     return STATE_ORDER.get(new, 0) > STATE_ORDER.get(current, 0)

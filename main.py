@@ -143,6 +143,7 @@ async def api_shipment_detail(shipment_id: int):
 @app.put("/api/shipments/{shipment_id}")
 async def api_update_shipment(shipment_id: int, request: Request):
     """Update shipment fields (title, state, carrier, etc)."""
+    from ingest import should_update_state
     shipment = db.get_shipment(shipment_id)
     if not shipment:
         raise HTTPException(404)
@@ -150,7 +151,14 @@ async def api_update_shipment(shipment_id: int, request: Request):
     allowed = {"title", "carrier", "tracking_number", "order_number", "tracking_link", "current_state"}
     updates = {k: v for k, v in body.items() if k in allowed and v is not None}
     if "current_state" in updates:
-        db.add_event(shipment_id, updates["current_state"], body.get("notes", "API update"), "manual")
+        new_state = updates["current_state"]
+        if new_state == shipment["current_state"]:
+            del updates["current_state"]
+        elif not should_update_state(shipment["current_state"], new_state):
+            if not body.get("force"):
+                raise HTTPException(409, detail=f"Cannot transition from '{shipment['current_state']}' to '{new_state}'")
+        if "current_state" in updates:
+            db.add_event(shipment_id, updates["current_state"], body.get("notes", "Manual update"), "manual")
     if updates:
         db.update_shipment(shipment_id, updates)
     return db.get_shipment(shipment_id)

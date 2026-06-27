@@ -68,6 +68,17 @@ def init_db():
             use_count INTEGER DEFAULT 0
         );
     """)
+    # Migration: fix state inconsistencies (delivered in events but not in current_state)
+    rows = conn.execute("""
+        SELECT s.id, s.current_state,
+               (SELECT e.state FROM events e WHERE e.shipment_id = s.id ORDER BY e.occurred_at DESC LIMIT 1) as last_event_state
+        FROM shipments s
+        WHERE s.current_state != 'delivered'
+    """).fetchall()
+    for row in rows:
+        if row["last_event_state"] == "delivered":
+            conn.execute("UPDATE shipments SET current_state = 'delivered' WHERE id = ?", (row["id"],))
+    conn.commit()
     conn.close()
 
 

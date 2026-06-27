@@ -181,7 +181,7 @@ export default function ShipmentDetail() {
     if (!shipment) return
     setSaving(true)
     const updated = await updateShipment(shipment.id, {
-      state: stateSelect,
+      current_state: stateSelect,
       notes: notes || undefined,
     })
     setShipment(prev => prev ? { ...prev, current_state: updated.current_state } : prev)
