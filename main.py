@@ -67,7 +67,12 @@ async def ingest_email(payload: EmailPayload):
     _ingest_timestamps.append(now)
 
     email = {"from": payload.from_, "subject": payload.subject, "body": payload.body, "html": payload.html, "product_name": payload.product_name, "message_id": payload.message_id, "date": payload.date}
-    result = process_email(email)
+    try:
+        result = process_email(email)
+    except Exception as e:
+        import logging
+        logging.getLogger("trackbox.ingest").exception("Ingest failed: %s", e)
+        return {"shipment_id": None, "state": None, "action": "error", "parser_status": "error", "error": str(e)}
     return result
 
 
