@@ -26,6 +26,7 @@
     </style>
 </head>
 <body>
+    {% set state_labels = {"unknown": "Unknown", "preparing": "Preparing", "shipped": "Shipped", "in_transit": "In Transit", "out_for_delivery": "Out for Delivery", "delivered": "Delivered", "delayed": "Delayed", "exception": "Exception"} %}
     <p><a href="/">← All shipments</a></p>
 
     <h1 style="display:inline">{{ shipment.title or "Shipment #" ~ shipment.id }}</h1>
@@ -36,7 +37,7 @@
 
     <dl>
         <dt>State</dt>
-        <dd><span class="state state-{{ shipment.current_state }}">{{ shipment.current_state }}</span></dd>
+        <dd><span class="state state-{{ shipment.current_state }}">{{ state_labels.get(shipment.current_state, shipment.current_state) }}</span></dd>
         <dt>Carrier</dt>
         <dd>{{ shipment.carrier or "—" }}</dd>
         <dt>Tracking Number</dt>
@@ -76,7 +77,7 @@
         <tbody>
             {% for e in events %}
             <tr>
-                <td><span class="state state-{{ e.state }}">{{ e.state }}</span></td>
+                <td><span class="state state-{{ e.state }}">{{ state_labels.get(e.state, e.state) }}</span></td>
                 <td>{{ e.notes or "—" }}</td>
                 <td>{{ e.source }}</td>
                 <td>{{ e.occurred_at[:16] if e.occurred_at else "—" }}</td>

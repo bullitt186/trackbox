@@ -24,6 +24,7 @@
 </head>
 <body>
     <h1>Trackbox</h1>
+    {% set state_labels = {"unknown": "Unknown", "preparing": "Preparing", "shipped": "Shipped", "in_transit": "In Transit", "out_for_delivery": "Out for Delivery", "delivered": "Delivered", "delayed": "Delayed", "exception": "Exception"} %}
     {% set active = shipments | selectattr("current_state", "ne", "delivered") | list %}
     {% set delivered = shipments | selectattr("current_state", "eq", "delivered") | list %}
 
@@ -44,7 +45,7 @@
             <tr>
                 <td><a href="/shipments/{{ s.id }}">{{ s.title or s.order_number or s.tracking_number or "Shipment #" ~ s.id }}</a></td>
                 <td>{{ s.carrier or "—" }}</td>
-                <td><span class="state state-{{ s.current_state }}">{{ s.current_state }}</span></td>
+                <td><span class="state state-{{ s.current_state }}">{{ state_labels.get(s.current_state, s.current_state) }}</span></td>
                 <td>{% if s.tracking_link %}<a href="{{ s.tracking_link }}" target="_blank" style="font-size:0.8rem">Track ↗</a>{% endif %}</td>
                 <td>{{ s.last_updated_at[:16] if s.last_updated_at else "—" }}</td>
             </tr>
