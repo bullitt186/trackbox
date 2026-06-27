@@ -3,10 +3,14 @@
 
 {% block extra_head %}
 <style>
-    .parser-card { background: var(--bg-surface); border-radius: 8px; padding: 1rem; margin-bottom: 0.8rem; box-shadow: var(--shadow); }
+    .parser-card { background: var(--bg-surface); border-radius: 8px; padding: 1rem; margin-bottom: 0.8rem; box-shadow: var(--shadow); transition: transform 0.2s, box-shadow 0.2s; }
+    .parser-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     .parser-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
     .parser-domain { font-weight: 600; font-size: 0.95rem; }
-    .parser-uses { font-size: 0.8rem; color: var(--text-muted); background: var(--bg); padding: 0.2rem 0.5rem; border-radius: 10px; }
+    .parser-uses { font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 10px; }
+    .parser-uses.hot { background: var(--state-delivered-bg); color: var(--state-delivered-fg); }
+    .parser-uses.warm { background: var(--state-ofd-bg); color: var(--state-ofd-fg); }
+    .parser-uses.cold { background: var(--bg); color: var(--text-muted); }
     .parser-keywords { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; }
     .parser-keywords span { background: var(--bg); padding: 0.1rem 0.4rem; border-radius: 3px; margin-right: 0.3rem; display: inline-block; margin-bottom: 0.2rem; }
     .field-map { font-size: 0.75rem; font-family: monospace; background: var(--bg); padding: 0.5rem; border-radius: 4px; overflow-x: auto; }
@@ -21,11 +25,14 @@
 <h1>Parsers <span style="font-size:0.9rem;color:var(--text-muted);font-weight:normal">({{ parsers | length }})</span></h1>
 <p style="font-size:0.85rem;color:var(--text-muted)">Deterministic parsers learned from emails. Higher use count = more AI calls saved.</p>
 
+{% if not parsers %}
+<p style="text-align:center;color:var(--text-muted);padding:2rem">No parsers learned yet. Send your first tracking email to get started.</p>
+{% endif %}
 {% for p in parsers %}
 <div class="parser-card">
     <div class="parser-header">
         <span class="parser-domain">{{ p.sender_domain }}</span>
-        <span class="parser-uses">{{ p.use_count }} uses</span>
+        <span class="parser-uses {% if p.use_count >= 5 %}hot{% elif p.use_count >= 1 %}warm{% else %}cold{% endif %}">{{ p.use_count }} uses</span>
     </div>
     <div class="parser-keywords">
         {% for kw in p.keywords %}

@@ -4,6 +4,7 @@
 
 {% block body %}
 {% set state_labels = {"unknown": "Unknown", "preparing": "Preparing", "shipped": "Shipped", "in_transit": "In Transit", "out_for_delivery": "Out for Delivery", "delivered": "Delivered", "delayed": "Delayed", "exception": "Exception"} %}
+{% set state_tips = {"preparing": "Order placed, not yet shipped", "shipped": "Handed to carrier", "in_transit": "On the way to you", "out_for_delivery": "On the delivery vehicle today", "delivered": "Successfully delivered", "delayed": "Carrier reported delay", "exception": "Problem with delivery"} %}
 {% set active = shipments | selectattr("current_state", "ne", "delivered") | list %}
 {% set delivered = shipments | selectattr("current_state", "eq", "delivered") | list %}
 
@@ -11,6 +12,10 @@
 
 {% if not active and delivered %}
 <p style="text-align:center; padding:1.5rem; color:var(--success)">All packages delivered!</p>
+{% elif active %}
+<p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem">
+    {{ active | length }} active shipment{{ "s" if active | length != 1 else "" }}{% if delivered %}, {{ delivered | length }} delivered{% endif %}
+</p>
 {% endif %}
 
 {% if active %}
@@ -28,9 +33,12 @@
     <tbody>
         {% for s in active %}
         <tr{% if s.current_state in ["delayed", "exception"] %} style="background:var(--state-alert-bg)"{% endif %}>
-            <td><a href="/shipments/{{ s.id }}" style="max-width:220px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom">{{ s.title or s.order_number or s.tracking_number or "Shipment #" ~ s.id }}</a></td>
+            <td>
+                <a href="/shipments/{{ s.id }}" style="max-width:220px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom">{{ s.title or s.order_number or s.tracking_number or "Shipment #" ~ s.id }}</a>
+                {% if s.tracking_number %}<br><span style="font-size:0.7rem;color:var(--text-muted);font-family:monospace">{{ s.tracking_number }}</span>{% endif %}
+            </td>
             <td style="color:var(--text-muted)">{% if s.carrier == "DHL" %}🟡{% elif s.carrier == "Hermes" %}🔵{% elif s.carrier == "DPD" %}🔴{% elif s.carrier == "Amazon Logistics" %}📦{% elif s.carrier %}🚚{% endif %} {{ s.carrier or "" }}</td>
-            <td><span class="state state-{{ s.current_state }}">{{ state_labels.get(s.current_state, s.current_state) }}</span></td>
+            <td><span class="state state-{{ s.current_state }}" title="{{ state_tips.get(s.current_state, '') }}">{{ state_labels.get(s.current_state, s.current_state) }}</span></td>
             <td>{% if s.tracking_link %}<a href="{{ s.tracking_link }}" target="_blank" class="btn btn-track">Track ↗</a>{% endif %}</td>
             <td>{% if s.last_updated_at %}<time datetime="{{ s.last_updated_at }}">{{ s.last_updated_at[:10] }}</time>{% else %}—{% endif %}</td>
         </tr>

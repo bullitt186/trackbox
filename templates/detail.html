@@ -47,6 +47,10 @@
 {% if shipment.current_state in ["delayed", "exception"] %}
 <p style="text-align:center;margin:-0.5rem 0 1rem"><span class="state state-{{ shipment.current_state }}">{{ state_labels.get(shipment.current_state, shipment.current_state) }}</span></p>
 {% endif %}
+{% set next_states = {"preparing": "Shipped", "shipped": "In Transit", "in_transit": "Out for Delivery", "out_for_delivery": "Delivered"} %}
+{% if shipment.current_state in next_states %}
+<p style="text-align:center;font-size:0.8rem;color:var(--text-muted);margin-top:-0.5rem">Next: {{ next_states[shipment.current_state] }}</p>
+{% endif %}
 
 <div class="meta-grid">
     <div class="meta-item">
@@ -86,7 +90,8 @@
     <button type="submit" class="btn btn-primary">Update</button>
 </form>
 
-<h3>Event History</h3>
+<details open>
+<summary><h3 style="display:inline">Event History</h3> <span style="font-size:0.8rem;color:var(--text-muted)">({{ events | length }})</span></summary>
 {% if events %}
 <table>
     <thead><tr><th>Status</th><th>Notes</th><th></th><th>Time</th></tr></thead>
@@ -104,6 +109,7 @@
 {% else %}
 <p style="color:var(--text-muted)">No events yet.</p>
 {% endif %}
+</details>
 
 <form style="margin-top:3rem;border-top:1px solid var(--border);padding-top:1rem" method="post" action="/shipments/{{ shipment.id }}/delete" onsubmit="return confirm('Delete this shipment and all events?')">
     <button type="submit" class="btn btn-danger">Delete Shipment</button>
@@ -112,6 +118,13 @@
 
 {% block scripts %}
 <script>
+// Keyboard shortcut: 't' opens tracking link
+document.addEventListener('keydown', e => {
+    if (e.key === 't' && !e.target.matches('input,select,textarea')) {
+        const link = document.querySelector('.btn-track');
+        if (link) window.open(link.href, '_blank');
+    }
+});
 document.querySelectorAll('time[datetime]').forEach(el => {
     const d = new Date(el.getAttribute('datetime'));
     const now = new Date();

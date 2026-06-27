@@ -60,11 +60,41 @@
 <h2>Top Carriers</h2>
 <div class="bar-chart">
     {% set max_carrier = stats.by_carrier.values() | max if stats.by_carrier else 1 %}
+    {% set carrier_emojis = {"DHL": "🟡", "Hermes": "🔵", "DPD": "🔴", "Amazon Logistics": "📦", "GLS": "🟢", "UPS": "🟤", "FedEx": "🟣"} %}
     {% for carrier, count in stats.by_carrier.items() %}
     <div class="bar-row">
-        <div class="bar-label">{{ carrier or "Unknown" }}</div>
+        <div class="bar-label">{{ carrier_emojis.get(carrier, "🚚") }} {{ carrier or "Unknown" }}</div>
         <div class="bar-fill" style="width: {{ (count / max_carrier * 100) | int }}%; background: var(--accent)">{{ count }}</div>
     </div>
     {% endfor %}
 </div>
+
+{% if stats.recent_events %}
+<h2>Recent Activity</h2>
+<div style="font-size:0.85rem">
+    {% for e in stats.recent_events %}
+    <div style="padding:0.4rem 0;border-bottom:1px solid var(--border);display:flex;gap:0.5rem;align-items:center">
+        <span class="state state-{{ e.state }}" style="font-size:0.65rem">{{ state_labels.get(e.state, e.state) }}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.notes or "—" }}</span>
+        <time datetime="{{ e.occurred_at }}" style="color:var(--text-muted);font-size:0.8rem">{{ e.occurred_at[:10] if e.occurred_at else "" }}</time>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('time[datetime]').forEach(el => {
+    const d = new Date(el.getAttribute('datetime'));
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) el.textContent = 'just now';
+    else if (diff < 3600) el.textContent = Math.floor(diff/60) + 'm ago';
+    else if (diff < 86400) el.textContent = Math.floor(diff/3600) + 'h ago';
+    else if (diff < 172800) el.textContent = 'yesterday';
+    else if (diff < 604800) el.textContent = Math.floor(diff/86400) + 'd ago';
+    else el.textContent = d.toLocaleDateString();
+});
+</script>
 {% endblock %}

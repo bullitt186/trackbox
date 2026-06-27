@@ -137,6 +137,7 @@ async def stats_page(request: Request):
     total_parsers = conn.execute("SELECT COUNT(*) FROM parsers").fetchone()[0]
     total_events = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
     total_uses = conn.execute("SELECT COALESCE(SUM(use_count), 0) FROM parsers").fetchone()[0]
+    recent_events = [dict(r) for r in conn.execute("SELECT * FROM events ORDER BY occurred_at DESC LIMIT 10").fetchall()]
     conn.close()
     ai_calls_saved = int(total_uses / max(total_uses + total_parsers, 1) * 100)
     stats = {
@@ -148,6 +149,7 @@ async def stats_page(request: Request):
         "ai_calls_saved": ai_calls_saved,
         "by_state": by_state,
         "by_carrier": by_carrier,
+        "recent_events": recent_events,
     }
     state_labels = {s: s.replace("_", " ").title() for s in VALID_STATES}
     return templates.TemplateResponse(request, "stats.html", {"stats": stats, "state_labels": state_labels})
