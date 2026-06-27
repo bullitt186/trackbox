@@ -354,7 +354,7 @@ export default function ShipmentDetail() {
                   </CardTitle>
                   <button
                     onClick={() => { setTitleDraft(shipment.title || ""); setEditingTitle(true) }}
-                    className="text-muted-foreground hover:text-foreground transition-colors opacity-40 hover:opacity-100"
+                    className="text-muted-foreground hover:text-foreground transition-colors opacity-40 hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                     aria-label="Edit title"
                     title="Edit title"
                   >

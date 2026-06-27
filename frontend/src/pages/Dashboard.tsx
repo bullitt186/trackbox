@@ -190,14 +190,14 @@ function ShipmentRow({ shipment, onArchive, onUnarchive, isArchiving = false }: 
       </td>
       <td className="py-2.5 pr-3">
         {shipment.tracking_number && (
-          <code className="text-xs font-mono text-muted-foreground">{shipment.tracking_number}</code>
+          <code className="text-xs font-mono text-muted-foreground select-all">{shipment.tracking_number}</code>
         )}
       </td>
       <td className="py-2.5 pr-3 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
         {relativeTime(shipment.last_updated_at)}
       </td>
       <td className="py-2.5 text-right">
-        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
           {onArchive && (
             <button
               onClick={e => { e.preventDefault(); e.stopPropagation(); onArchive(shipment.id) }}

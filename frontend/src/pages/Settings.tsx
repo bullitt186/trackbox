@@ -43,7 +43,7 @@ interface ScraperForm {
 function SectionHeader({ label, description }: { label: string; description?: string }) {
   return (
     <div className="pt-2 pb-1">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
       {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
     </div>
   )
