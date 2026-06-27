@@ -1,100 +1,72 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="refresh" content="60">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
-    <title>Trackbox ({{ shipments | length }})</title>
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #ddd; }
-        td:first-child a { max-width: 200px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
-        a { color: #0066cc; }
-        .state { padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: 500; }
-        .state-delivered { background: #d4edda; color: #155724; }
-        .state-shipped, .state-in_transit { background: #cce5ff; color: #004085; }
-        .state-out_for_delivery { background: #fff3cd; color: #856404; }
-        .state-delayed, .state-exception { background: #f8d7da; color: #721c24; }
-        .state-preparing { background: #e2e3e5; color: #383d41; }
-        .state-unknown { background: #f0f0f0; color: #666; }
-        .empty { color: #666; padding: 2rem; text-align: center; }
-        h2 { margin-top: 2rem; font-size: 1.2rem; }
-        .section-delivered { opacity: 0.7; }
-        .count { font-size: 0.85rem; color: #666; font-weight: normal; }
-        @media (max-width: 600px) {
-            table, thead, tbody, th, td, tr { display: block; }
-            thead { display: none; }
-            tr { margin-bottom: 0.8rem; border: 1px solid #ddd; border-radius: 6px; padding: 0.5rem; }
-            td { padding: 0.2rem 0.5rem; border: none; }
-            td:first-child { font-weight: 600; }
-        }
-    </style>
-</head>
-<body>
-    <h1>Trackbox</h1>
-    {% set state_labels = {"unknown": "Unknown", "preparing": "Preparing", "shipped": "Shipped", "in_transit": "In Transit", "out_for_delivery": "Out for Delivery", "delivered": "Delivered", "delayed": "Delayed", "exception": "Exception"} %}
-    {% set active = shipments | selectattr("current_state", "ne", "delivered") | list %}
-    {% set delivered = shipments | selectattr("current_state", "eq", "delivered") | list %}
+{% extends "base.html" %}
+{% block title %}Trackbox ({{ shipments | length }}){% endblock %}
+{% block extra_head %}<meta http-equiv="refresh" content="60">{% endblock %}
 
-    {% if not active and delivered %}
-    <p style="color:#28a745; text-align:center; padding:1rem">All packages delivered!</p>
-    {% endif %}
+{% block body %}
+{% set state_labels = {"unknown": "Unknown", "preparing": "Preparing", "shipped": "Shipped", "in_transit": "In Transit", "out_for_delivery": "Out for Delivery", "delivered": "Delivered", "delayed": "Delayed", "exception": "Exception"} %}
+{% set active = shipments | selectattr("current_state", "ne", "delivered") | list %}
+{% set delivered = shipments | selectattr("current_state", "eq", "delivered") | list %}
 
-    {% if active %}
-    <h2>Active <span class="count">({{ active | length }})</span></h2>
+<h1>Trackbox</h1>
+
+{% if not active and delivered %}
+<p style="text-align:center; padding:1.5rem; color:var(--success)">All packages delivered!</p>
+{% endif %}
+
+{% if active %}
+<h2>Active <span style="font-size:0.85rem;color:var(--text-muted);font-weight:normal">({{ active | length }})</span></h2>
+<table>
+    <thead>
+        <tr>
+            <th>Shipment</th>
+            <th>Carrier</th>
+            <th>Status</th>
+            <th></th>
+            <th>Updated</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in active %}
+        <tr{% if s.current_state in ["delayed", "exception"] %} style="background:var(--state-alert-bg)"{% endif %}>
+            <td><a href="/shipments/{{ s.id }}" style="max-width:220px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom">{{ s.title or s.order_number or s.tracking_number or "Shipment #" ~ s.id }}</a></td>
+            <td style="color:var(--text-muted)">{{ s.carrier or "" }}</td>
+            <td><span class="state state-{{ s.current_state }}">{{ state_labels.get(s.current_state, s.current_state) }}</span></td>
+            <td>{% if s.tracking_link %}<a href="{{ s.tracking_link }}" target="_blank" class="btn btn-track">Track ↗</a>{% endif %}</td>
+            <td>{% if s.last_updated_at %}<time datetime="{{ s.last_updated_at }}">{{ s.last_updated_at[:10] }}</time>{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if delivered %}
+<details {% if not active %}open{% endif %} style="margin-top:2rem;opacity:0.7">
+    <summary style="cursor:pointer"><h2 style="display:inline">Delivered <span style="font-size:0.85rem;color:var(--text-muted);font-weight:normal">({{ delivered | length }})</span></h2></summary>
     <table>
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Carrier</th>
-                <th>State</th>
-                <th>Track</th>
-                <th>Last Updated</th>
-            </tr>
-        </thead>
+        <thead><tr><th>Shipment</th><th>Carrier</th><th>Updated</th></tr></thead>
         <tbody>
-            {% for s in active %}
-            <tr{% if s.current_state in ["delayed", "exception"] %} style="background:#fff5f5"{% endif %}>
+            {% for s in delivered %}
+            <tr>
                 <td><a href="/shipments/{{ s.id }}">{{ s.title or s.order_number or s.tracking_number or "Shipment #" ~ s.id }}</a></td>
-                <td>{{ s.carrier or "—" }}</td>
-                <td><span class="state state-{{ s.current_state }}">{{ state_labels.get(s.current_state, s.current_state) }}</span></td>
-                <td>{% if s.tracking_link %}<a href="{{ s.tracking_link }}" target="_blank" style="font-size:0.8rem">Track ↗</a>{% endif %}</td>
-                <td>{% if s.last_updated_at %}<time datetime="{{ s.last_updated_at }}">{{ s.last_updated_at[:16] }}</time>{% else %}—{% endif %}</td>
+                <td style="color:var(--text-muted)">{{ s.carrier or "" }}</td>
+                <td>{% if s.last_updated_at %}<time datetime="{{ s.last_updated_at }}">{{ s.last_updated_at[:10] }}</time>{% else %}—{% endif %}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% endif %}
+</details>
+{% endif %}
 
-    {% if delivered %}
-    <details class="section-delivered" {% if not active %}open{% endif %}>
-        <summary><h2 style="display:inline">Delivered <span class="count">({{ delivered | length }})</span></h2></summary>
-        <table>
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Carrier</th>
-                    <th>Last Updated</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for s in delivered %}
-                <tr>
-                    <td><a href="/shipments/{{ s.id }}">{{ s.title or s.order_number or s.tracking_number or "Shipment #" ~ s.id }}</a></td>
-                    <td>{{ s.carrier or "—" }}</td>
-                    <td>{% if s.last_updated_at %}<time datetime="{{ s.last_updated_at }}">{{ s.last_updated_at[:16] }}</time>{% else %}—{% endif %}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </details>
-    {% endif %}
+{% if not shipments %}
+<p style="color:var(--text-muted); padding:3rem; text-align:center">No shipments yet.</p>
+{% endif %}
 
-    {% if not shipments %}
-    <p class="empty">No shipments yet. POST an email to /ingest to get started.</p>
-    {% endif %}
+<nav style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);font-size:0.8rem;color:var(--text-muted)">
+    <a href="/stats">Statistics</a> &middot; <a href="/parsers">Parsers</a>
+</nav>
+{% endblock %}
+
+{% block scripts %}
 <script>
 document.querySelectorAll('time[datetime]').forEach(el => {
     const d = new Date(el.getAttribute('datetime'));
@@ -108,5 +80,4 @@ document.querySelectorAll('time[datetime]').forEach(el => {
     else el.textContent = d.toLocaleDateString();
 });
 </script>
-</body>
-</html>
+{% endblock %}

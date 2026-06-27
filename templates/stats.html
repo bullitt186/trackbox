@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Statistics — Trackbox{% endblock %}
+
+{% block extra_head %}
+<style>
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .stat-card { background: var(--bg-surface); border-radius: 8px; padding: 1.2rem; text-align: center; box-shadow: var(--shadow); }
+    .stat-card .number { font-size: 2rem; font-weight: 700; color: var(--accent); }
+    .stat-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-top: 0.3rem; }
+    .bar-chart { margin: 1.5rem 0; }
+    .bar-row { display: flex; align-items: center; margin-bottom: 0.5rem; }
+    .bar-label { width: 120px; font-size: 0.8rem; color: var(--text-muted); }
+    .bar-fill { height: 24px; border-radius: 4px; min-width: 2px; transition: width 0.5s ease; display: flex; align-items: center; padding-left: 0.5rem; font-size: 0.75rem; font-weight: 600; color: white; }
+</style>
+{% endblock %}
+
+{% block body %}
+<p><a href="/">← All shipments</a></p>
+<h1>Statistics</h1>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="number">{{ stats.total_shipments }}</div>
+        <div class="label">Total Shipments</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ stats.active }}</div>
+        <div class="label">Active</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ stats.delivered }}</div>
+        <div class="label">Delivered</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ stats.total_parsers }}</div>
+        <div class="label">Parsers</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ stats.total_events }}</div>
+        <div class="label">Events</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ stats.ai_calls_saved }}%</div>
+        <div class="label">AI Calls Saved</div>
+    </div>
+</div>
+
+<h2>Shipments by State</h2>
+<div class="bar-chart">
+    {% set max_count = stats.by_state.values() | max if stats.by_state else 1 %}
+    {% set state_colors = {"in_transit": "var(--accent)", "out_for_delivery": "var(--warning)", "delivered": "var(--success)", "delayed": "var(--danger)", "preparing": "#888", "shipped": "#5b9bd5", "unknown": "#aaa", "exception": "var(--danger)"} %}
+    {% for state, count in stats.by_state.items() %}
+    <div class="bar-row">
+        <div class="bar-label">{{ state_labels.get(state, state) }}</div>
+        <div class="bar-fill" style="width: {{ (count / max_count * 100) | int }}%; background: {{ state_colors.get(state, '#888') }}">{{ count }}</div>
+    </div>
+    {% endfor %}
+</div>
+
+<h2>Top Carriers</h2>
+<div class="bar-chart">
+    {% set max_carrier = stats.by_carrier.values() | max if stats.by_carrier else 1 %}
+    {% for carrier, count in stats.by_carrier.items() %}
+    <div class="bar-row">
+        <div class="bar-label">{{ carrier or "Unknown" }}</div>
+        <div class="bar-fill" style="width: {{ (count / max_carrier * 100) | int }}%; background: var(--accent)">{{ count }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,121 +1,115 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
-    <title>{{ shipment.title or "Shipment #" ~ shipment.id }} — Trackbox</title>
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-        a { color: #0066cc; }
-        dl { display: grid; grid-template-columns: auto 1fr; gap: 0.3rem 1rem; }
-        dt { font-weight: 600; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #ddd; }
-        .state { padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; font-weight: 500; }
-        .state-delivered { background: #d4edda; color: #155724; }
-        .state-shipped, .state-in_transit { background: #cce5ff; color: #004085; }
-        .state-out_for_delivery { background: #fff3cd; color: #856404; }
-        .state-delayed, .state-exception { background: #f8d7da; color: #721c24; }
-        .state-preparing { background: #e2e3e5; color: #383d41; }
-        .state-unknown { background: #f0f0f0; color: #666; }
-        form { margin-top: 1.5rem; }
-        select, input, button { padding: 0.4rem; font-size: 0.9rem; }
-        button { cursor: pointer; }
-        .progress-bar { display: flex; justify-content: space-between; margin: 1.5rem 0; position: relative; }
-        .progress-bar::before { content: ''; position: absolute; top: 10px; left: 10%; right: 10%; height: 3px; background: #ddd; z-index: 0; }
-        .progress-step { text-align: center; flex: 1; position: relative; z-index: 1; }
-        .progress-step .dot { width: 20px; height: 20px; border-radius: 50%; background: #ddd; margin: 0 auto 0.3rem; border: 2px solid #ddd; }
-        .progress-step span { font-size: 0.7rem; color: #999; display: block; }
-        .progress-step.done .dot { background: #28a745; border-color: #28a745; }
-        .progress-step.done span { color: #333; }
-        .progress-step.current .dot { border-color: #0066cc; background: #0066cc; box-shadow: 0 0 0 3px rgba(0,102,204,0.2); }
-        .progress-step.current span { font-weight: 600; color: #0066cc; }
-        .delete-form { margin-top: 3rem; border-top: 1px solid #eee; padding-top: 1rem; }
-        .delete-form button { background: none; color: #999; border: 1px solid #ddd; padding: 0.4rem 0.8rem; border-radius: 3px; font-size: 0.8rem; }
-        .delete-form button:hover { color: #dc3545; border-color: #dc3545; }
-    </style>
-</head>
-<body>
-    {% set state_labels = {"unknown": "Unknown", "preparing": "Preparing", "shipped": "Shipped", "in_transit": "In Transit", "out_for_delivery": "Out for Delivery", "delivered": "Delivered", "delayed": "Delayed", "exception": "Exception"} %}
-    <p><a href="/">← All shipments</a></p>
-    {% if flash %}<div style="background:#d4edda;color:#155724;padding:0.5rem 1rem;border-radius:4px;margin-bottom:1rem">{{ flash }}</div>{% endif %}
+{% extends "base.html" %}
+{% block title %}{{ shipment.title or "Shipment #" ~ shipment.id }} — Trackbox{% endblock %}
 
-    <h1 style="display:inline">{{ shipment.title or "Shipment #" ~ shipment.id }}</h1>
-    <form method="post" action="/shipments/{{ shipment.id }}/title" style="display:inline; margin-left:1rem">
-        <input type="text" name="title" placeholder="Edit title" size="25" value="{{ shipment.title or '' }}">
-        <button type="submit" style="font-size:0.8rem">Save</button>
-    </form>
+{% block extra_head %}
+<style>
+    .progress-bar { display: flex; justify-content: space-between; margin: 1.5rem 0; position: relative; }
+    .progress-bar::before { content: ''; position: absolute; top: 12px; left: 10%; right: 10%; height: 3px; background: var(--border); z-index: 0; }
+    .progress-step { text-align: center; flex: 1; position: relative; z-index: 1; }
+    .progress-step .dot { width: 24px; height: 24px; border-radius: 50%; background: var(--bg-surface); margin: 0 auto 0.4rem; border: 3px solid var(--border); transition: all 0.3s; }
+    .progress-step span { font-size: 0.7rem; color: var(--text-muted); display: block; }
+    .progress-step.done .dot { background: var(--success); border-color: var(--success); }
+    .progress-step.done span { color: var(--text); }
+    .progress-step.current .dot { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent); }
+    .progress-step.current span { font-weight: 700; color: var(--accent); }
+    .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .meta-item { background: var(--bg-surface); border-radius: 8px; padding: 0.8rem; }
+    .meta-item dt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.2rem; }
+    .meta-item dd { margin: 0; font-size: 0.95rem; }
+    .title-edit { display: inline-flex; align-items: center; gap: 0.5rem; }
+    .title-edit input { font-size: 1rem; padding: 0.3rem 0.5rem; width: 250px; }
+</style>
+{% endblock %}
 
-    {% set steps = ["preparing", "shipped", "in_transit", "out_for_delivery", "delivered"] %}
-    {% set current_idx = steps.index(shipment.current_state) if shipment.current_state in steps else -1 %}
-    <div class="progress-bar">
-        {% for step in steps %}
-        <div class="progress-step {% if steps.index(step) <= current_idx %}done{% endif %} {% if step == shipment.current_state %}current{% endif %}">
-            <div class="dot"></div>
-            <span>{{ state_labels.get(step, step) }}</span>
-        </div>
-        {% endfor %}
+{% block body %}
+{% set state_labels = {"unknown": "Unknown", "preparing": "Preparing", "shipped": "Shipped", "in_transit": "In Transit", "out_for_delivery": "Out for Delivery", "delivered": "Delivered", "delayed": "Delayed", "exception": "Exception"} %}
+{% set steps = ["preparing", "shipped", "in_transit", "out_for_delivery", "delivered"] %}
+{% set current_idx = steps.index(shipment.current_state) if shipment.current_state in steps else -1 %}
+
+<p><a href="/">← All shipments</a></p>
+{% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+
+<h1 style="margin-bottom:0.5rem">{{ shipment.title or "Shipment #" ~ shipment.id }}</h1>
+<form method="post" action="/shipments/{{ shipment.id }}/title" class="title-edit" style="margin-bottom:1.5rem">
+    <input type="text" name="title" placeholder="Edit title..." value="{{ shipment.title or '' }}">
+    <button type="submit" class="btn btn-primary" style="font-size:0.75rem;padding:0.3rem 0.6rem">Save</button>
+</form>
+
+<div class="progress-bar">
+    {% for step in steps %}
+    <div class="progress-step {% if steps.index(step) <= current_idx %}done{% endif %} {% if step == shipment.current_state %}current{% endif %}">
+        <div class="dot"></div>
+        <span>{{ state_labels.get(step, step) }}</span>
     </div>
-    {% if shipment.current_state in ["delayed", "exception"] %}
-    <p style="margin:0.5rem 0"><span class="state state-{{ shipment.current_state }}">{{ state_labels.get(shipment.current_state, shipment.current_state) }}</span></p>
-    {% endif %}
+    {% endfor %}
+</div>
+{% if shipment.current_state in ["delayed", "exception"] %}
+<p style="text-align:center;margin:-0.5rem 0 1rem"><span class="state state-{{ shipment.current_state }}">{{ state_labels.get(shipment.current_state, shipment.current_state) }}</span></p>
+{% endif %}
 
-    <dl>
+<div class="meta-grid">
+    <div class="meta-item">
         <dt>Carrier</dt>
         <dd>{{ shipment.carrier or "—" }}</dd>
+    </div>
+    <div class="meta-item">
         <dt>Tracking Number</dt>
-        <dd>{% if shipment.tracking_number %}<code style="cursor:pointer" onclick="navigator.clipboard.writeText('{{ shipment.tracking_number }}');this.style.color='#28a745'" title="Click to copy">{{ shipment.tracking_number }}</code>{% else %}—{% endif %}</dd>
+        <dd>{% if shipment.tracking_number %}<code onclick="navigator.clipboard.writeText('{{ shipment.tracking_number }}');this.style.color='var(--success)'" title="Click to copy">{{ shipment.tracking_number }}</code>{% else %}—{% endif %}</dd>
+    </div>
+    <div class="meta-item">
         <dt>Order Number</dt>
         <dd>{{ shipment.order_number or "—" }}</dd>
-        <dt>Tracking Link</dt>
-        <dd>{% if shipment.tracking_link %}<a href="{{ shipment.tracking_link }}" target="_blank" style="display:inline-block;padding:0.3rem 0.8rem;background:#0066cc;color:white;border-radius:4px;text-decoration:none;font-size:0.85rem">Track Package ↗</a>{% else %}—{% endif %}</dd>
+    </div>
+    <div class="meta-item">
+        <dt>Tracking</dt>
+        <dd>{% if shipment.tracking_link %}<a href="{{ shipment.tracking_link }}" target="_blank" class="btn btn-track">Track Package ↗</a>{% else %}—{% endif %}</dd>
+    </div>
+    <div class="meta-item">
         <dt>First Seen</dt>
-        <dd>{% if shipment.first_seen_at %}<time datetime="{{ shipment.first_seen_at }}">{{ shipment.first_seen_at[:16] }}</time>{% else %}—{% endif %}</dd>
+        <dd>{% if shipment.first_seen_at %}<time datetime="{{ shipment.first_seen_at }}">{{ shipment.first_seen_at[:10] }}</time>{% else %}—{% endif %}</dd>
+    </div>
+    <div class="meta-item">
         <dt>Last Updated</dt>
-        <dd>{% if shipment.last_updated_at %}<time datetime="{{ shipment.last_updated_at }}">{{ shipment.last_updated_at[:16] }}</time>{% else %}—{% endif %}</dd>
-    </dl>
+        <dd>{% if shipment.last_updated_at %}<time datetime="{{ shipment.last_updated_at }}">{{ shipment.last_updated_at[:10] }}</time>{% else %}—{% endif %}</dd>
+    </div>
+</div>
 
-    <form method="post" action="/shipments/{{ shipment.id }}/state">
-        <h3>Update State</h3>
-        <select name="state">
-            {% for s in states %}
-            <option value="{{ s }}" {% if s == shipment.current_state %}selected{% endif %}>{{ state_labels.get(s, s) }}</option>
-            {% endfor %}
-        </select>
-        <input type="text" name="notes" placeholder="Notes (optional)">
-        <button type="submit">Update</button>
-    </form>
+<h3>Update State</h3>
+<form method="post" action="/shipments/{{ shipment.id }}/state" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+    <select name="state">
+        {% for s in states %}
+        <option value="{{ s }}" {% if s == shipment.current_state %}selected{% endif %}>{{ state_labels.get(s, s) }}</option>
+        {% endfor %}
+    </select>
+    <input type="text" name="notes" placeholder="Notes (optional)" style="flex:1;min-width:150px">
+    <button type="submit" class="btn btn-primary">Update</button>
+</form>
 
-    <h3>Event History</h3>
-    {% if events %}
-    <table>
-        <thead>
-            <tr>
-                <th>State</th>
-                <th>Notes</th>
-                <th>Source</th>
-                <th>Time</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for e in events %}
-            <tr>
-                <td><span class="state state-{{ e.state }}">{{ state_labels.get(e.state, e.state) }}</span></td>
-                <td>{{ e.notes or "—" }}</td>
-                <td title="{{ e.source }}">{% if e.source == "email" %}📧{% else %}✏️{% endif %}</td>
-                <td>{% if e.occurred_at %}<time datetime="{{ e.occurred_at }}">{{ e.occurred_at[:16] }}</time>{% else %}—{% endif %}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p>No events yet.</p>
-    {% endif %}
+<h3>Event History</h3>
+{% if events %}
+<table>
+    <thead><tr><th>Status</th><th>Notes</th><th></th><th>Time</th></tr></thead>
+    <tbody>
+        {% for e in events %}
+        <tr>
+            <td><span class="state state-{{ e.state }}">{{ state_labels.get(e.state, e.state) }}</span></td>
+            <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.notes or "—" }}</td>
+            <td title="{{ e.source }}">{% if e.source == "email" %}📧{% else %}✏️{% endif %}</td>
+            <td>{% if e.occurred_at %}<time datetime="{{ e.occurred_at }}">{{ e.occurred_at[:10] }}</time>{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color:var(--text-muted)">No events yet.</p>
+{% endif %}
 
-    <form class="delete-form" method="post" action="/shipments/{{ shipment.id }}/delete" onsubmit="return confirm('Delete this shipment?')">
-        <button type="submit">Delete Shipment</button>
-    </form>
+<form style="margin-top:3rem;border-top:1px solid var(--border);padding-top:1rem" method="post" action="/shipments/{{ shipment.id }}/delete" onsubmit="return confirm('Delete this shipment and all events?')">
+    <button type="submit" class="btn btn-danger">Delete Shipment</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
 <script>
 document.querySelectorAll('time[datetime]').forEach(el => {
     const d = new Date(el.getAttribute('datetime'));
@@ -129,5 +123,4 @@ document.querySelectorAll('time[datetime]').forEach(el => {
     else el.textContent = d.toLocaleDateString();
 });
 </script>
-</body>
-</html>
+{% endblock %}

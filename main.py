@@ -124,6 +124,50 @@ async def index(request: Request):
     return templates.TemplateResponse(request, "index.html", {"shipments": shipments})
 
 
+@app.get("/stats", response_class=HTMLResponse)
+async def stats_page(request: Request):
+    conn = db.get_conn()
+    by_state = {}
+    for row in conn.execute("SELECT current_state, COUNT(*) as cnt FROM shipments GROUP BY current_state").fetchall():
+        by_state[row["current_state"]] = row["cnt"]
+    by_carrier = {}
+    for row in conn.execute("SELECT carrier, COUNT(*) as cnt FROM shipments WHERE carrier IS NOT NULL GROUP BY carrier ORDER BY cnt DESC").fetchall():
+        by_carrier[row["carrier"]] = row["cnt"]
+    total_shipments = conn.execute("SELECT COUNT(*) FROM shipments").fetchone()[0]
+    total_parsers = conn.execute("SELECT COUNT(*) FROM parsers").fetchone()[0]
+    total_events = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+    total_uses = conn.execute("SELECT COALESCE(SUM(use_count), 0) FROM parsers").fetchone()[0]
+    conn.close()
+    ai_calls_saved = int(total_uses / max(total_uses + total_parsers, 1) * 100)
+    stats = {
+        "total_shipments": total_shipments,
+        "active": sum(v for k, v in by_state.items() if k != "delivered"),
+        "delivered": by_state.get("delivered", 0),
+        "total_parsers": total_parsers,
+        "total_events": total_events,
+        "ai_calls_saved": ai_calls_saved,
+        "by_state": by_state,
+        "by_carrier": by_carrier,
+    }
+    state_labels = {s: s.replace("_", " ").title() for s in VALID_STATES}
+    return templates.TemplateResponse(request, "stats.html", {"stats": stats, "state_labels": state_labels})
+
+
+@app.get("/parsers", response_class=HTMLResponse)
+async def parsers_page(request: Request):
+    import json as json_mod
+    conn = db.get_conn()
+    rows = conn.execute("SELECT * FROM parsers ORDER BY use_count DESC").fetchall()
+    conn.close()
+    parsers = []
+    for r in rows:
+        p = dict(r)
+        p["keywords"] = json_mod.loads(p["subject_keywords"]) if p["subject_keywords"] else []
+        p["field_map"] = json_mod.loads(p["field_map"]) if p["field_map"] else {}
+        parsers.append(p)
+    return templates.TemplateResponse(request, "parsers.html", {"parsers": parsers})
+
+
 @app.get("/shipments/{shipment_id}", response_class=HTMLResponse)
 async def detail(request: Request, shipment_id: int, updated: str | None = None):
     shipment = db.get_shipment(shipment_id)

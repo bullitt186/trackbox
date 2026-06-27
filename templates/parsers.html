@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Parsers — Trackbox{% endblock %}
+
+{% block extra_head %}
+<style>
+    .parser-card { background: var(--bg-surface); border-radius: 8px; padding: 1rem; margin-bottom: 0.8rem; box-shadow: var(--shadow); }
+    .parser-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .parser-domain { font-weight: 600; font-size: 0.95rem; }
+    .parser-uses { font-size: 0.8rem; color: var(--text-muted); background: var(--bg); padding: 0.2rem 0.5rem; border-radius: 10px; }
+    .parser-keywords { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .parser-keywords span { background: var(--bg); padding: 0.1rem 0.4rem; border-radius: 3px; margin-right: 0.3rem; display: inline-block; margin-bottom: 0.2rem; }
+    .field-map { font-size: 0.75rem; font-family: monospace; background: var(--bg); padding: 0.5rem; border-radius: 4px; overflow-x: auto; }
+    .field-map dt { color: var(--accent); display: inline; }
+    .field-map dd { display: inline; margin: 0 1rem 0 0.3rem; color: var(--text-muted); }
+    details summary { cursor: pointer; font-size: 0.8rem; color: var(--text-muted); }
+</style>
+{% endblock %}
+
+{% block body %}
+<p><a href="/">← All shipments</a></p>
+<h1>Parsers <span style="font-size:0.9rem;color:var(--text-muted);font-weight:normal">({{ parsers | length }})</span></h1>
+<p style="font-size:0.85rem;color:var(--text-muted)">Deterministic parsers learned from emails. Higher use count = more AI calls saved.</p>
+
+{% for p in parsers %}
+<div class="parser-card">
+    <div class="parser-header">
+        <span class="parser-domain">{{ p.sender_domain }}</span>
+        <span class="parser-uses">{{ p.use_count }} uses</span>
+    </div>
+    <div class="parser-keywords">
+        {% for kw in p.keywords %}
+        <span>{{ kw }}</span>
+        {% endfor %}
+    </div>
+    <details>
+        <summary>Field map</summary>
+        <dl class="field-map">
+            {% for field, strategy in p.field_map.items() %}
+            <dt>{{ field }}:</dt>
+            <dd>{{ strategy.strategy }}{% if strategy.get("label") %} "{{ strategy.label }}"{% endif %}{% if strategy.get("value") %} = "{{ strategy.value }}"{% endif %}{% if strategy.get("contains") %} ~ "{{ strategy.contains }}"{% endif %}</dd>
+            {% endfor %}
+        </dl>
+    </details>
+</div>
+{% endfor %}
+{% endblock %}
