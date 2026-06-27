@@ -227,6 +227,17 @@ async def api_update_settings(request: Request):
 # --- Scraper endpoints ---
 
 
+@app.get("/api/scrape-log")
+async def api_scrape_log(
+    shipment_id: int | None = None,
+    carrier: str | None = None,
+    status: str | None = None,
+    limit: int = 50,
+):
+    """Query the scrape log with optional filters."""
+    return db.get_scrape_log(shipment_id=shipment_id, carrier=carrier, status=status, limit=limit)
+
+
 @app.get("/api/scrapers")
 async def api_list_scrapers():
     """List available scrapers with status."""

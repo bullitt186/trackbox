@@ -65,3 +65,25 @@ export async function deleteParser(id: number): Promise<void> {
 export async function fetchHealth(): Promise<{ status: string; version: string; build_time: string; uptime_seconds: number }> {
   return (await fetch(`${BASE}/health`)).json()
 }
+
+export interface ScrapeLogEntry {
+  id: number
+  shipment_id: number
+  carrier: string | null
+  tracking_number: string | null
+  status: string  // "success", "no_change", "error", "timeout", "disabled"
+  state_before: string | null
+  state_after: string | null
+  message: string | null
+  duration_ms: number | null
+  occurred_at: string | null
+}
+
+export async function fetchScrapeLog(params?: { shipment_id?: number; carrier?: string; status?: string; limit?: number }): Promise<ScrapeLogEntry[]> {
+  const q = new URLSearchParams()
+  if (params?.shipment_id) q.set("shipment_id", String(params.shipment_id))
+  if (params?.carrier) q.set("carrier", params.carrier)
+  if (params?.status) q.set("status", params.status)
+  if (params?.limit) q.set("limit", String(params.limit))
+  return (await fetch(`${BASE}/api/scrape-log?${q}`)).json()
+}

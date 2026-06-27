@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { StateBadge } from "@/components/StateBadge"
-import { fetchShipment, updateShipment, deleteShipment, type Shipment, type ShipmentEvent } from "@/lib/api"
+import { fetchShipment, updateShipment, deleteShipment, fetchScrapeLog, type Shipment, type ShipmentEvent, type ScrapeLogEntry } from "@/lib/api"
 import { relativeTime, STATE_LABELS, STATES, cn } from "@/lib/utils"
 
 // Progress stepper state order
@@ -100,6 +100,23 @@ function SourceBadge({ source }: { source: string }) {
   )
 }
 
+function ScrapeStatusIcon({ status }: { status: string }) {
+  switch (status) {
+    case "success":
+      return <span className="text-emerald-600" title="Success">{"✓"}</span>
+    case "no_change":
+      return <span className="text-muted-foreground" title="No change">{"—"}</span>
+    case "error":
+      return <span className="text-red-600" title="Error">{"✗"}</span>
+    case "timeout":
+      return <span className="text-amber-600" title="Timeout">{"⏱"}</span>
+    case "disabled":
+      return <span className="text-red-600" title="Disabled">{"⛔"}</span>
+    default:
+      return <span className="text-muted-foreground">?</span>
+  }
+}
+
 function EventRow({ event }: { event: ShipmentEvent }) {
   return (
     <tr className="border-b border-border last:border-0 hover:bg-accent/30 transition-colors">
@@ -156,6 +173,8 @@ export default function ShipmentDetail() {
   const [copiedTracking, setCopiedTracking] = useState(false)
   const [scraping, setScraping] = useState(false)
   const [scrapeResult, setScrapeResult] = useState<string | null>(null)
+  const [scrapeLog, setScrapeLog] = useState<ScrapeLogEntry[]>([])
+  const [scrapeLogOpen, setScrapeLogOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -166,6 +185,13 @@ export default function ShipmentDetail() {
   }, [id])
 
   useEffect(() => { load() }, [load])
+
+  // Load scrape log when section is opened
+  useEffect(() => {
+    if (scrapeLogOpen && id) {
+      fetchScrapeLog({ shipment_id: Number(id), limit: 20 }).then(setScrapeLog)
+    }
+  }, [scrapeLogOpen, id])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -430,6 +456,59 @@ export default function ShipmentDetail() {
               )}
             </div>
           </CardContent>
+        </Card>
+      )}
+
+      {/* Scrape Log (collapsible) */}
+      {shipment.scrape_enabled !== undefined && (
+        <Card>
+          <CardHeader className="pb-2">
+            <button
+              onClick={() => setScrapeLogOpen(!scrapeLogOpen)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <CardTitle className="text-sm text-muted-foreground font-medium">Scrape Log</CardTitle>
+              <span className="text-xs text-muted-foreground">{scrapeLogOpen ? "Hide" : "Show"}</span>
+            </button>
+          </CardHeader>
+          {scrapeLogOpen && (
+            <CardContent>
+              {scrapeLog.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No scrape log entries yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Time</th>
+                        <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Status</th>
+                        <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Duration</th>
+                        <th className="text-left py-1.5 font-medium text-muted-foreground">Message</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scrapeLog.map(entry => (
+                        <tr key={entry.id} className="border-b border-border last:border-0">
+                          <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">
+                            {relativeTime(entry.occurred_at)}
+                          </td>
+                          <td className="py-1.5 pr-3">
+                            <ScrapeStatusIcon status={entry.status} />
+                          </td>
+                          <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">
+                            {entry.duration_ms != null ? `${entry.duration_ms}ms` : "-"}
+                          </td>
+                          <td className="py-1.5 text-muted-foreground truncate max-w-[200px]" title={entry.message ?? undefined}>
+                            {entry.message ?? "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          )}
         </Card>
       )}
 

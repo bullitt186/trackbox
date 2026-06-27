@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { fetchScrapeLog, fetchShipments, type ScrapeLogEntry, type Shipment } from "@/lib/api"
 
 interface ScraperInfo {
   carrier: string
@@ -30,17 +32,25 @@ export default function Settings() {
   const [dhlEnabled, setDhlEnabled] = useState(true)
   const [dhlApiKey, setDhlApiKey] = useState("")
   const [dhlInterval, setDhlInterval] = useState("120")
+  const [recentLog, setRecentLog] = useState<ScrapeLogEntry[]>([])
+  const [shipmentMap, setShipmentMap] = useState<Record<number, Shipment>>({})
 
   useEffect(() => {
     Promise.all([
       fetch(`${BASE}/api/settings`).then(r => r.json()),
       fetch(`${BASE}/api/scrapers`).then(r => r.json()),
-    ]).then(([settingsData, scrapersData]) => {
+      fetchScrapeLog({ carrier: "dhl", limit: 30 }),
+      fetchShipments(),
+    ]).then(([settingsData, scrapersData, logData, shipmentsData]) => {
       setSettings(settingsData)
       setScraperStatus(scrapersData)
       setDhlEnabled(settingsData.scraper_dhl_enabled === "true")
       setDhlApiKey(settingsData.scraper_dhl_api_key || "")
       setDhlInterval(settingsData.scraper_dhl_interval_minutes || "60")
+      setRecentLog(logData)
+      const map: Record<number, Shipment> = {}
+      for (const s of shipmentsData) map[s.id] = s
+      setShipmentMap(map)
       setLoading(false)
     })
   }, [])
@@ -197,6 +207,78 @@ export default function Settings() {
           )}
         </CardContent>
       </Card>
+
+      {/* Recent Scrape Activity */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Recent Scrape Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentLog.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No scrape activity recorded yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Time</th>
+                    <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Shipment</th>
+                    <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Status</th>
+                    <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Duration</th>
+                    <th className="text-left py-1.5 font-medium text-muted-foreground">Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentLog.map(entry => {
+                    const ship = shipmentMap[entry.shipment_id]
+                    return (
+                      <tr key={entry.id} className="border-b border-border last:border-0">
+                        <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">
+                          {entry.occurred_at ? new Date(entry.occurred_at).toLocaleString() : "-"}
+                        </td>
+                        <td className="py-1.5 pr-3 whitespace-nowrap">
+                          <Link
+                            to={`/shipments/${entry.shipment_id}`}
+                            className="text-primary hover:underline"
+                          >
+                            {ship?.title || `#${entry.shipment_id}`}
+                          </Link>
+                        </td>
+                        <td className="py-1.5 pr-3">
+                          <SettingsScrapeStatusIcon status={entry.status} />
+                        </td>
+                        <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap">
+                          {entry.duration_ms != null ? `${entry.duration_ms}ms` : "-"}
+                        </td>
+                        <td className="py-1.5 text-muted-foreground truncate max-w-[200px]" title={entry.message ?? undefined}>
+                          {entry.message ?? "-"}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
+}
+
+function SettingsScrapeStatusIcon({ status }: { status: string }) {
+  switch (status) {
+    case "success":
+      return <span className="text-emerald-600" title="Success">{"✓"}</span>
+    case "no_change":
+      return <span className="text-muted-foreground" title="No change">{"—"}</span>
+    case "error":
+      return <span className="text-red-600" title="Error">{"✗"}</span>
+    case "timeout":
+      return <span className="text-amber-600" title="Timeout">{"⏱"}</span>
+    case "disabled":
+      return <span className="text-red-600" title="Disabled">{"⛔"}</span>
+    default:
+      return <span className="text-muted-foreground">?</span>
+  }
 }

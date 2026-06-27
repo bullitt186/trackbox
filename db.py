@@ -71,6 +71,18 @@ def init_db():
             key TEXT PRIMARY KEY,
             value TEXT
         );
+        CREATE TABLE IF NOT EXISTS scrape_log (
+            id INTEGER PRIMARY KEY,
+            shipment_id INTEGER REFERENCES shipments(id) ON DELETE CASCADE,
+            carrier TEXT,
+            tracking_number TEXT,
+            status TEXT,
+            state_before TEXT,
+            state_after TEXT,
+            message TEXT,
+            duration_ms INTEGER,
+            occurred_at TEXT
+        );
     """)
     # Migration: add scraping columns to shipments
     for col, default in [
@@ -265,3 +277,55 @@ def increment_parser_use(parser_id: int):
     conn.execute("UPDATE parsers SET use_count = use_count + 1 WHERE id = ?", (parser_id,))
     conn.commit()
     conn.close()
+
+
+# --- Scrape Log ---
+
+def add_scrape_log(
+    shipment_id: int,
+    carrier: str | None,
+    tracking_number: str | None,
+    status: str,
+    state_before: str | None,
+    state_after: str | None,
+    message: str | None,
+    duration_ms: int | None,
+) -> int:
+    conn = get_conn()
+    cur = conn.execute(
+        """INSERT INTO scrape_log
+           (shipment_id, carrier, tracking_number, status, state_before, state_after, message, duration_ms, occurred_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (shipment_id, carrier, tracking_number, status, state_before, state_after, message, duration_ms, _now()),
+    )
+    conn.commit()
+    log_id = cur.lastrowid
+    conn.close()
+    return log_id
+
+
+def get_scrape_log(
+    shipment_id: int | None = None,
+    carrier: str | None = None,
+    status: str | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    conditions = []
+    params: list = []
+    if shipment_id is not None:
+        conditions.append("shipment_id = ?")
+        params.append(shipment_id)
+    if carrier is not None:
+        conditions.append("carrier = ?")
+        params.append(carrier)
+    if status is not None:
+        conditions.append("status = ?")
+        params.append(status)
+    where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    conn = get_conn()
+    rows = conn.execute(
+        f"SELECT * FROM scrape_log {where} ORDER BY occurred_at DESC LIMIT ?",
+        params + [limit],
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
