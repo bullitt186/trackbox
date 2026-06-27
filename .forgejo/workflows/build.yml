@@ -62,6 +62,13 @@ jobs:
             sleep 10
           done
 
+          # Tag successful deploy
+          TAG="deploy-$(date +%Y%m%d)-${SHA}"
+          curl -sf -X POST "http://192.168.0.2:3002/api/v1/repos/bullitt/trackbox/tags" \
+            -H "Authorization: token ${REGISTRY_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag_name\":\"${TAG}\",\"target\":\"${SHA}\",\"message\":\"Deployed ${SHA}\"}" || true
+
           # Notify success
           notify "success" "Trackbox deployed ${SHA}" "Lint, test, build, deploy, smoke test passed."
 
