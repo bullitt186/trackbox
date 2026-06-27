@@ -112,7 +112,7 @@ DATABASE_PATH=/app/data/trackbox.db
 ```yaml
 services:
   trackbox:
-    image: git.stahmer.lan/bullitt/trackbox:latest
+    image: git.stahmer.net/bullitt/trackbox:latest
     ports:
       - "8000:8000"
     volumes:

@@ -10,9 +10,6 @@ IMAGE="git.stahmer.net/bullitt/trackbox:${TAG}"
 
 echo "Rolling back to ${IMAGE}..."
 docker pull "${IMAGE}"
-docker stop trackbox 2>/dev/null || true
-docker rm trackbox 2>/dev/null || true
-docker tag "${IMAGE}" git.stahmer.lan/bullitt/trackbox:latest
 
 # Trigger Komodo redeploy
 # KOMODO_KEY and KOMODO_SECRET must be set in the environment (or in .env on the docker host).

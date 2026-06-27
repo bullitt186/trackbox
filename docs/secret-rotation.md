@@ -7,7 +7,7 @@
 4. Verify: `curl -s http://192.168.0.50:8900/health`
 
 ## Forgejo Registry Token (REGISTRY_TOKEN)
-1. Generate at http://git.stahmer.lan/user/settings/applications
+1. Generate at https://git.stahmer.net/user/settings/applications
 2. Update Forgejo repo secret via API or UI
 3. Next CI run will use new token
 

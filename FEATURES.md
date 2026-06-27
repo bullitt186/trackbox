@@ -129,7 +129,7 @@ Interactive API docs are available at `GET /docs` (Swagger UI) and `GET /redoc` 
 
 ## Deployment
 
-- Docker container (`git.stahmer.lan/bullitt/trackbox:latest`)
+- Docker container (`git.stahmer.net/bullitt/trackbox:latest`)
 - Part of n8n stack on docker host (192.168.0.50)
 - Accessible internally at `http://trackbox:8000` (n8n-infra network)
 - Accessible at `http://192.168.0.50:8900` (host port)
@@ -137,7 +137,7 @@ Interactive API docs are available at `GET /docs` (Swagger UI) and `GET /redoc` 
 - Docker healthcheck via `/health` endpoint
 - SQLite data persisted at `/srv/docker-data/volumes/n8n/trackbox/`
 - Komodo GitOps auto-deploy from `bullitt/docker` repo
-- Source on Forgejo at `git.stahmer.lan/bullitt/trackbox`
+- Source on Forgejo at `git.stahmer.net/bullitt/trackbox`
 - Forgejo Actions CI workflow defined (runner needs Docker CLI fix for automation)
 - CORS enabled for frontend development
 - Static file serving for frontend builds at `/app`

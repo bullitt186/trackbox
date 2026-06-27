@@ -23,4 +23,4 @@
 ## Scenario: CI broken
 1. Check runner: `docker ps --filter name=forgejo-runner`
 2. Check logs: `docker logs forgejo-runner --tail 20`
-3. Manual build: `cd /tmp && git clone http://192.168.0.2:3002/bullitt/trackbox.git && cd trackbox && docker build -t git.stahmer.lan/bullitt/trackbox:latest .`
+3. Manual build: `cd /tmp && git clone https://git.stahmer.net/bullitt/trackbox.git && cd trackbox && docker build -t git.stahmer.net/bullitt/trackbox:latest .`
