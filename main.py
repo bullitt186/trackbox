@@ -37,13 +37,13 @@ if os.path.isdir("frontend/dist"):
 
 
 class EmailPayload(BaseModel):
-    from_: str = Field(alias="from")
-    subject: str
-    body: str
-    html: str | None = None
-    product_name: str | None = None
-    message_id: str | None = None
-    date: str | None = None
+    from_: str = Field(alias="from", min_length=1, max_length=500)
+    subject: str = Field(max_length=1000)
+    body: str = Field(max_length=100_000)
+    html: str | None = Field(default=None, max_length=500_000)
+    product_name: str | None = Field(default=None, max_length=200)
+    message_id: str | None = Field(default=None, max_length=500)
+    date: str | None = Field(default=None, max_length=50)
 
     model_config = {"populate_by_name": True}
 
