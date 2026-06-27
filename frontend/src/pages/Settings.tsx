@@ -6,18 +6,32 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { fetchScrapeLog, fetchShipments, type ScrapeLogEntry, type Shipment } from "@/lib/api"
 
+interface ScraperOption {
+  key: string
+  name: string
+}
+
 interface ScraperInfo {
   carrier: string
   name: string
   enabled: boolean
   configured: boolean
   default_interval_minutes: number
+  available_scrapers: ScraperOption[]
+  active_scraper: string
 }
 
 interface ScrapersResponse {
   scrapers: ScraperInfo[]
   scheduler_running: boolean
   last_cycle_at: string | null
+}
+
+interface ScraperForm {
+  enabled: boolean
+  interval: string
+  apiKey?: string
+  activeKey: string
 }
 
 const BASE = ""
@@ -30,9 +44,7 @@ export default function Settings() {
   const [saved, setSaved] = useState(false)
   const [recentLog, setRecentLog] = useState<ScrapeLogEntry[]>([])
   const [shipmentMap, setShipmentMap] = useState<Record<number, Shipment>>({})
-
-  // Per-carrier form state: { carrier: { enabled, interval, apiKey? } }
-  const [scraperForms, setScraperForms] = useState<Record<string, { enabled: boolean; interval: string; apiKey?: string }>>({})
+  const [scraperForms, setScraperForms] = useState<Record<string, ScraperForm>>({})
 
   useEffect(() => {
     Promise.all([
@@ -44,13 +56,13 @@ export default function Settings() {
       setAllSettings(settingsData)
       setScraperStatus(scrapersData)
 
-      // Build form state from settings for each scraper
-      const forms: Record<string, { enabled: boolean; interval: string; apiKey?: string }> = {}
+      const forms: Record<string, ScraperForm> = {}
       for (const s of (scrapersData as ScrapersResponse).scrapers) {
         const c = s.carrier
         forms[c] = {
           enabled: settingsData[`scraper_${c}_enabled`] === "true",
           interval: settingsData[`scraper_${c}_interval_minutes`] || String(s.default_interval_minutes),
+          activeKey: settingsData[`scraper_${c}_active`] || s.active_scraper,
           ...(c === "dhl" ? { apiKey: settingsData.scraper_dhl_api_key || "" } : {}),
         }
       }
@@ -70,6 +82,7 @@ export default function Settings() {
     for (const [carrier, form] of Object.entries(scraperForms)) {
       payload[`scraper_${carrier}_enabled`] = form.enabled ? "true" : "false"
       payload[`scraper_${carrier}_interval_minutes`] = form.interval
+      payload[`scraper_${carrier}_active`] = form.activeKey
       if (form.apiKey !== undefined) {
         payload[`scraper_${carrier}_api_key`] = form.apiKey
       }
@@ -110,11 +123,13 @@ export default function Settings() {
       {scraperStatus?.scrapers.map(s => {
         const form = scraperForms[s.carrier]
         if (!form) return null
+        // Active scraper name for header display
+        const activeName = s.available_scrapers.find(o => o.key === form.activeKey)?.name ?? s.name
         return (
           <Card key={s.carrier}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{s.name} Scraper</CardTitle>
+                <CardTitle className="text-base">{activeName} Scraper</CardTitle>
                 <div className="flex items-center gap-2">
                   {scraperStatus?.scheduler_running && s.carrier === scraperStatus.scrapers[0]?.carrier && (
                     <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
@@ -134,7 +149,7 @@ export default function Settings() {
             <CardContent className="space-y-4">
               {/* Enable/Disable toggle */}
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Enable {s.name} Scraping</label>
+                <label className="text-sm font-medium">Enable {s.carrier.toUpperCase()} Scraping</label>
                 <button
                   onClick={() => updateForm(s.carrier, "enabled", !form.enabled)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -149,8 +164,30 @@ export default function Settings() {
                 </button>
               </div>
 
-              {/* API Key (DHL only) */}
-              {form.apiKey !== undefined && (
+              {/* Tracking method selector — only when multiple scrapers available */}
+              {s.available_scrapers.length > 1 && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Tracking Method</label>
+                  <div className="flex flex-col gap-1.5">
+                    {s.available_scrapers.map(opt => (
+                      <label key={opt.key} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="radio"
+                          name={`scraper_${s.carrier}_active`}
+                          value={opt.key}
+                          checked={form.activeKey === opt.key}
+                          onChange={() => updateForm(s.carrier, "activeKey", opt.key)}
+                          className="accent-primary"
+                        />
+                        {opt.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* API Key (DHL only, shown when API scraper is selected) */}
+              {form.apiKey !== undefined && form.activeKey === "dhl_api" && (
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">API Key</label>
                   <Input
@@ -176,8 +213,8 @@ export default function Settings() {
                   onChange={e => updateForm(s.carrier, "interval", e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  How often to check for status updates. Minimum 10 min, default {s.default_interval_minutes} min.
-                  {s.carrier === "dhl" && " DHL allows 250 calls/day."}
+                  Minimum 10 min, default {s.default_interval_minutes} min.
+                  {s.carrier === "dhl" && form.activeKey === "dhl_api" && " DHL API allows 250 calls/day."}
                 </p>
               </div>
             </CardContent>

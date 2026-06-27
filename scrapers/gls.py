@@ -35,6 +35,7 @@ class GLSScraper(BaseScraper):
     """Scraper using GLS public tracking page (SSR JSON extraction)."""
 
     name = "GLS"
+    key = "gls"
     carrier = "gls"
     default_interval_minutes = 60
     min_request_spacing = 3.0

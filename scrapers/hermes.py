@@ -24,6 +24,7 @@ class HermesScraper(BaseScraper):
     """Scraper using Hermes public tracking API (no auth required)."""
 
     name = "Hermes"
+    key = "hermes"
     carrier = "hermes"
     default_interval_minutes = 60
     min_request_spacing = 3.0

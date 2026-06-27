@@ -41,6 +41,7 @@ class DPDScraper(BaseScraper):
     """Scraper using DPD public tracking page (HTML scraping)."""
 
     name = "DPD"
+    key = "dpd"
     carrier = "dpd"
     default_interval_minutes = 60
     min_request_spacing = 5.0

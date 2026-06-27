@@ -20,6 +20,7 @@ class BaseScraper(ABC):
     """Abstract base for carrier scrapers."""
 
     name: str = "unknown"
+    key: str = ""
     carrier: str = ""
     default_interval_minutes: int = 60
     min_request_spacing: float = 5.0
