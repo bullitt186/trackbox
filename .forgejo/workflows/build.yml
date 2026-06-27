@@ -66,5 +66,12 @@ jobs:
           echo "Health check FAILED"
           exit 1
 
+      - name: Notify success
+        run: |
+          . /tmp/trackbox-ci/.build-env 2>/dev/null || true
+          curl -sf -X POST http://192.168.0.2:9932/notify/uptime-kuma \
+            -H "Content-Type: application/json" \
+            -d "{\"title\":\"Trackbox deployed ${SHA:-?}\",\"body\":\"Build, test, deploy, smoke test passed.\",\"type\":\"success\"}" || true
+
       - name: Cleanup
         run: rm -rf /tmp/trackbox-ci
