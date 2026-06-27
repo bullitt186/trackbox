@@ -260,3 +260,14 @@ async def update_title(shipment_id: int, title: str = Form(...)):
 async def delete_shipment(shipment_id: int):
     db.delete_shipment(shipment_id)
     return RedirectResponse("/", status_code=303)
+
+
+@app.on_event("startup")
+def validate_env():
+    """Warn about missing optional config."""
+    import logging
+    logger = logging.getLogger("trackbox.startup")
+    if not os.getenv("OPENAI_API_KEY"):
+        logger.warning("OPENAI_API_KEY not set - AI extraction will fail")
+    if os.getenv("DATABASE_PATH", "").startswith(":memory"):
+        logger.warning("Using in-memory database - data will not persist")
