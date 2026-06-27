@@ -18,6 +18,7 @@ SYSTEM_PROMPT = """You are an email parser for a parcel tracking system. Given a
    - tracking_link: full URL for tracking the package (if present)
    - title: brief description of what was ordered. If no product details are present, use just the merchant/sender name (e.g. "voelkner", "Amazon", "Banggood"). Never use the full email subject as title.
    - status: the shipment state. Must be one of: unknown, preparing, shipped, in_transit, out_for_delivery, delivered, delayed, exception
+   - estimated_delivery: the estimated or expected delivery date as an ISO 8601 date string (YYYY-MM-DD) if mentioned in the email, otherwise null
 
 2. Generate a field_map that describes HOW each field can be extracted from similar future emails from the same sender with the same email type. The field_map uses these strategies only:
    - {"strategy": "after_label", "label": "<text>"} — the field value appears on the same line after this label text
@@ -33,7 +34,8 @@ Respond with JSON only:
     "carrier": "..." or null,
     "tracking_link": "..." or null,
     "title": "..." or null,
-    "status": "..."
+    "status": "...",
+    "estimated_delivery": "YYYY-MM-DD" or null
   },
   "field_map": {
     "order_number": {"strategy": "...", ...},
@@ -41,7 +43,8 @@ Respond with JSON only:
     "carrier": {"strategy": "...", ...},
     "tracking_link": {"strategy": "...", ...},
     "title": {"strategy": "...", ...},
-    "status": {"strategy": "...", ...}
+    "status": {"strategy": "...", ...},
+    "estimated_delivery": {"strategy": "...", ...}
   }
 }"""
 

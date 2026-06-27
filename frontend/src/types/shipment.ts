@@ -20,6 +20,7 @@ export interface Shipment {
   current_state: ShipmentState
   first_seen_at: string | null
   last_updated_at: string | null
+  estimated_delivery?: string | null
   scrape_enabled?: number
   scrape_fail_count?: number
   last_scraped_at?: string | null

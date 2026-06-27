@@ -37,3 +37,18 @@ export const STATE_LABELS: Record<string, string> = {
 }
 
 export const STATES = ["unknown", "preparing", "shipped", "in_transit", "out_for_delivery", "delivered", "delayed", "exception"] as const
+
+/**
+ * Returns a human-readable ETA label for a YYYY-MM-DD estimated_delivery string.
+ * Returns null if the date is in the past or not provided.
+ */
+export function etaLabel(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null
+  const eta = new Date(dateStr + "T00:00:00")
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const diff = Math.round((eta.getTime() - today.getTime()) / 86400000)
+  if (diff < 0) return null // past
+  if (diff === 0) return "Arriving today"
+  if (diff === 1) return "Arriving tomorrow"
+  return `Expected ${eta.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
+}

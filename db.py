@@ -90,9 +90,12 @@ def init_db():
         ("scrape_fail_count", "0"),
         ("last_scraped_at", "NULL"),
         ("archived", "0"),
+        ("estimated_delivery", "NULL"),
     ]:
         try:
-            col_type = "TEXT" if col == "last_scraped_at" else "INTEGER"
+            col_type = "TEXT"
+            if col not in ("last_scraped_at", "estimated_delivery"):
+                col_type = "INTEGER"
             conn.execute(f"ALTER TABLE shipments ADD COLUMN {col} {col_type} DEFAULT {default}")
             conn.commit()
         except Exception:
@@ -164,8 +167,8 @@ def create_shipment(fields: dict) -> int:
     conn = get_conn()
     cur = conn.execute(
         """INSERT INTO shipments (title, tracking_number, order_number, carrier,
-           tracking_link, current_state, first_seen_at, last_updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+           tracking_link, current_state, first_seen_at, last_updated_at, estimated_delivery)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             fields.get("title"),
             fields.get("tracking_number"),
@@ -173,7 +176,8 @@ def create_shipment(fields: dict) -> int:
             fields.get("carrier"),
             fields.get("tracking_link"),
             fields.get("status", "unknown"),
-            email_date, email_date
+            email_date, email_date,
+            fields.get("estimated_delivery"),
         )
     )
     conn.commit()
@@ -185,7 +189,7 @@ def create_shipment(fields: dict) -> int:
 def update_shipment(shipment_id: int, fields: dict, occurred_at: str | None = None):
     sets = []
     vals = []
-    for key in ("title", "tracking_number", "order_number", "carrier", "tracking_link", "current_state", "archived"):
+    for key in ("title", "tracking_number", "order_number", "carrier", "tracking_link", "current_state", "archived", "estimated_delivery"):
         if key in fields and fields[key] is not None:
             sets.append(f"{key} = ?")
             vals.append(fields[key])
