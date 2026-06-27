@@ -80,7 +80,16 @@ function ShipmentCard({ shipment, onArchive, onUnarchive }: {
               <div className="flex items-center gap-1.5 flex-wrap justify-end">
                 <StateBadge state={shipment.current_state} />
                 {shipment.stalled && (
-                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                  <span
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 cursor-help"
+                    title={
+                      shipment.stall_reason === "scrape_failures"
+                        ? `Scraping disabled after ${shipment.scrape_fail_count} failures`
+                        : shipment.stall_reason === "retention_expired"
+                        ? "Carrier retention window exceeded — no more updates available"
+                        : "No further updates expected"
+                    }
+                  >
                     Stalled
                   </span>
                 )}

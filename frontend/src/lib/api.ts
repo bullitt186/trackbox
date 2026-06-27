@@ -19,6 +19,7 @@ export interface Shipment {
   last_scraped_at?: string | null
   archived?: number
   stalled?: boolean
+  stall_reason?: string | null
 }
 
 export interface ShipmentEvent {

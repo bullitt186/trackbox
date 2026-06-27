@@ -428,11 +428,46 @@ export default function ShipmentDetail() {
         </div>
       )}
 
-      {/* Stalled note */}
+      {/* Stalled card */}
       {shipment.stalled && (
-        <p className="text-sm text-amber-600 dark:text-amber-400">
-          No further updates expected — scraping is disabled for this shipment.
-        </p>
+        <Card className="border-amber-300 dark:border-amber-700">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium text-sm">
+              <span>⚠</span>
+              <span>Stalled — no further updates expected</span>
+            </div>
+            {shipment.stall_reason === "scrape_failures" && (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Scraping was disabled after {shipment.scrape_fail_count} consecutive failures.
+                  {shipment.last_scraped_at
+                    ? ` Last attempt: ${relativeTime(shipment.last_scraped_at)}.`
+                    : " No successful scrape recorded."}
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    await fetch(`/api/shipments/${shipment.id}/scrape`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ enabled: true }),
+                    })
+                    await load()
+                  }}
+                >
+                  Re-enable Scraping
+                </Button>
+              </>
+            )}
+            {shipment.stall_reason === "retention_expired" && (
+              <p className="text-sm text-muted-foreground">
+                The carrier's tracking data retention window has been exceeded.
+                No further updates are available from the carrier.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Tracking retention note (delivered only) */}

@@ -141,9 +141,11 @@ def _annotate_stalled(shipments: list[dict]) -> None:
             s["stalled"] = False
             continue
         stalled = False
+        stall_reason = None
         # Permanently disabled by scraper failures
         if s.get("scrape_enabled") == 0 and (s.get("scrape_fail_count") or 0) >= 3:
             stalled = True
+            stall_reason = "scrape_failures"
         # Retention window exceeded (scraping would find nothing anyway)
         if not stalled and s.get("last_updated_at"):
             carrier = (s.get("carrier") or "").lower()
@@ -162,9 +164,11 @@ def _annotate_stalled(shipments: list[dict]) -> None:
                     last_updated = last_updated.replace(tzinfo=timezone.utc)
                 if (now - last_updated).days > effective_ret:
                     stalled = True
+                    stall_reason = "retention_expired"
             except (ValueError, AttributeError):
                 pass
         s["stalled"] = stalled
+        s["stall_reason"] = stall_reason
 
 
 @app.get("/api/shipments")
@@ -225,6 +229,7 @@ async def api_shipment_detail(shipment_id: int):
             tracking_expires_at = (last_updated + timedelta(days=effective_ret)).isoformat()
         except (ValueError, AttributeError):
             pass
+    _annotate_stalled([shipment])
     return {**shipment, "events": events, "tracking_expires_at": tracking_expires_at}
 
 
