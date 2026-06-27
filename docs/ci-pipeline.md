@@ -29,3 +29,7 @@ Forgejo automatically cancels in-progress runs when new push arrives.
 ```sh
 ./scripts/rollback.sh deploy-YYYYMMDD-SHA
 ```
+
+## Build Metrics
+Average build time: ~90 seconds (test ~30s, build ~40s, deploy ~20s)
+
