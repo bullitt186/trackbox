@@ -84,11 +84,12 @@ def init_db():
             occurred_at TEXT
         );
     """)
-    # Migration: add scraping columns to shipments
+    # Migration: add scraping and archive columns to shipments
     for col, default in [
         ("scrape_enabled", "1"),
         ("scrape_fail_count", "0"),
         ("last_scraped_at", "NULL"),
+        ("archived", "0"),
     ]:
         try:
             col_type = "TEXT" if col == "last_scraped_at" else "INTEGER"
@@ -120,11 +121,11 @@ def _row_to_dict(row):
 
 # --- Shipments ---
 
-def list_shipments(limit=50, offset=0):
+def list_shipments(limit=50, offset=0, archived: int = 0):
     conn = get_conn()
     rows = conn.execute(
-        "SELECT * FROM shipments ORDER BY last_updated_at DESC LIMIT ? OFFSET ?",
-        (limit, offset)
+        "SELECT * FROM shipments WHERE archived = ? ORDER BY last_updated_at DESC LIMIT ? OFFSET ?",
+        (archived, limit, offset)
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -184,7 +185,7 @@ def create_shipment(fields: dict) -> int:
 def update_shipment(shipment_id: int, fields: dict, occurred_at: str | None = None):
     sets = []
     vals = []
-    for key in ("title", "tracking_number", "order_number", "carrier", "tracking_link", "current_state"):
+    for key in ("title", "tracking_number", "order_number", "carrier", "tracking_link", "current_state", "archived"):
         if key in fields and fields[key] is not None:
             sets.append(f"{key} = ?")
             vals.append(fields[key])

@@ -17,6 +17,8 @@ export interface Shipment {
   scrape_enabled?: number
   scrape_fail_count?: number
   last_scraped_at?: string | null
+  archived?: number
+  stalled?: boolean
 }
 
 export interface ShipmentEvent {
@@ -37,9 +39,13 @@ export interface Parser {
   use_count: number
 }
 
-export async function fetchShipments(state?: "active" | "delivered"): Promise<Shipment[]> {
+export async function fetchShipments(state?: "active" | "delivered" | "archived"): Promise<Shipment[]> {
   const url = state ? `${BASE}/api/shipments?state=${state}` : `${BASE}/api/shipments`
   return (await fetch(url)).json()
+}
+
+export async function archiveShipment(id: number, archived: boolean): Promise<Shipment> {
+  return updateShipment(id, { archived: archived ? 1 : 0 })
 }
 
 export async function fetchShipment(id: number): Promise<Shipment & { events: ShipmentEvent[] }> {

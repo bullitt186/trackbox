@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
-  ArrowLeft, ExternalLink, Copy, Check, Pencil, Trash2, X, Save, RefreshCw,
+  ArrowLeft, ExternalLink, Copy, Check, Pencil, Trash2, X, Save, RefreshCw, Archive, ArchiveRestore,
 } from "lucide-react"
 import * as Dialog from "@radix-ui/react-dialog"
 import * as Select from "@radix-ui/react-select"
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { StateBadge } from "@/components/StateBadge"
-import { fetchShipment, updateShipment, deleteShipment, fetchScrapeLog, type Shipment, type ShipmentEvent, type ScrapeLogEntry } from "@/lib/api"
+import { fetchShipment, updateShipment, archiveShipment, deleteShipment, fetchScrapeLog, type Shipment, type ShipmentEvent, type ScrapeLogEntry } from "@/lib/api"
 import { relativeTime, STATE_LABELS, STATES, cn } from "@/lib/utils"
 
 // Progress stepper state order
@@ -236,6 +236,13 @@ export default function ShipmentDetail() {
     navigate("/")
   }
 
+  const handleArchiveToggle = async () => {
+    if (!shipment) return
+    const isArchived = shipment.archived === 1
+    await archiveShipment(shipment.id, !isArchived)
+    await load()
+  }
+
   const handleScrapeNow = async () => {
     if (!shipment) return
     setScraping(true)
@@ -316,6 +323,15 @@ export default function ShipmentDetail() {
               </a>
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleArchiveToggle}
+            aria-label={shipment.archived ? "Unarchive shipment" : "Archive shipment"}
+            title={shipment.archived ? "Unarchive" : "Archive"}
+          >
+            {shipment.archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+          </Button>
           <Button
             variant="outline"
             size="icon"
@@ -402,6 +418,22 @@ export default function ShipmentDetail() {
           </dl>
         </CardContent>
       </Card>
+
+      {/* Archived badge */}
+      {shipment.archived === 1 && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Archive className="h-4 w-4" />
+          <span>This shipment is archived.</span>
+          <button onClick={handleArchiveToggle} className="text-primary hover:underline text-xs">Unarchive</button>
+        </div>
+      )}
+
+      {/* Stalled note */}
+      {shipment.stalled && (
+        <p className="text-sm text-amber-600 dark:text-amber-400">
+          No further updates expected — scraping is disabled for this shipment.
+        </p>
+      )}
 
       {/* Tracking retention note (delivered only) */}
       {isDelivered && (shipment as any).tracking_expires_at && (() => {

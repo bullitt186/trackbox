@@ -330,13 +330,14 @@ class ScraperScheduler:
 
         if expired_ids:
             conn = db.get_conn()
+            placeholders = ",".join("?" * len(expired_ids))
             conn.execute(
-                f"UPDATE shipments SET scrape_enabled = 0 WHERE id IN ({','.join('?' * len(expired_ids))})",
+                f"UPDATE shipments SET scrape_enabled = 0, archived = 1 WHERE id IN ({placeholders})",
                 expired_ids,
             )
             conn.commit()
             conn.close()
-            log.info("Retention expired: disabled scraping for %d shipment(s)", len(expired_ids))
+            log.info("Retention expired: auto-archived %d shipment(s)", len(expired_ids))
 
 
 _last_manual_scrape: float = 0

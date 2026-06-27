@@ -60,11 +60,16 @@ imap_poller = IMAPPoller()
 
 @app.on_event("startup")
 def startup():
+    from datetime import datetime, timezone  # noqa: PLC0415
+
+    from scrapers import list_scrapers as _ls
     setup_logging()
     db.init_db()
     app_settings.init_settings()
     scheduler.start()
     imap_poller.start()
+    # Backfill: auto-archive any already-expired delivered shipments immediately
+    scheduler._disable_retention_expired(datetime.now(timezone.utc), _ls())
 
 
 @app.on_event("shutdown")
@@ -124,18 +129,59 @@ async def api_stats():
     }
 
 
+def _annotate_stalled(shipments: list[dict]) -> None:
+    """Annotate shipments with stalled: True when no further updates are expected."""
+    from datetime import datetime, timezone  # noqa: PLC0415
+
+    from scrapers import list_scrapers as _ls
+    scrapers_map = {s["carrier"]: s for s in _ls()}
+    now = datetime.now(timezone.utc)
+    for s in shipments:
+        if s.get("current_state") == "delivered":
+            s["stalled"] = False
+            continue
+        stalled = False
+        # Permanently disabled by scraper failures
+        if s.get("scrape_enabled") == 0 and (s.get("scrape_fail_count") or 0) >= 3:
+            stalled = True
+        # Retention window exceeded (scraping would find nothing anyway)
+        if not stalled and s.get("last_updated_at"):
+            carrier = (s.get("carrier") or "").lower()
+            max_ret = scrapers_map.get(carrier, {}).get("max_retention_days", app_settings.DEFAULT_RETENTION_DAYS)
+            try:
+                configured_ret = int(app_settings.get_setting(
+                    f"scraper_{carrier}_retention_days",
+                    str(app_settings.DEFAULT_RETENTION_DAYS),
+                ))
+            except ValueError:
+                configured_ret = app_settings.DEFAULT_RETENTION_DAYS
+            effective_ret = min(configured_ret, max_ret)
+            try:
+                last_updated = datetime.fromisoformat(s["last_updated_at"].replace("Z", "+00:00"))
+                if last_updated.tzinfo is None:
+                    last_updated = last_updated.replace(tzinfo=timezone.utc)
+                if (now - last_updated).days > effective_ret:
+                    stalled = True
+            except (ValueError, AttributeError):
+                pass
+        s["stalled"] = stalled
+
+
 @app.get("/api/shipments")
-async def api_shipments(state: str | None = None):
-    """JSON list of shipments. Optional ?state=active or ?state=delivered."""
-    shipments = db.list_shipments(limit=200)
-    if state == "active":
-        shipments = [s for s in shipments if s["current_state"] != "delivered"]
-    elif state == "delivered":
-        shipments = [s for s in shipments if s["current_state"] == "delivered"]
-    # Sort active by state urgency (out_for_delivery first, then in_transit, etc)
+async def api_shipments(state: str | None = None, archived: str | None = None):
+    """JSON list of shipments. ?state=active|delivered|archived, ?archived=true."""
+    # archived=true or state=archived → show archived shipments
+    show_archived = archived == "true" or state == "archived"
+    shipments = db.list_shipments(limit=200, archived=1 if show_archived else 0)
+    if not show_archived:
+        if state == "active":
+            shipments = [s for s in shipments if s["current_state"] != "delivered"]
+        elif state == "delivered":
+            shipments = [s for s in shipments if s["current_state"] == "delivered"]
+    # Sort by state urgency
     state_priority = {"out_for_delivery": 0, "delayed": 1, "exception": 1, "in_transit": 2, "shipped": 3, "preparing": 4, "unknown": 5, "delivered": 6}
     shipments.sort(key=lambda s: state_priority.get(s["current_state"], 5))
-    # Add last_event summary
+    # Add last_event summary and stalled annotation
     conn = db.get_conn()
     for s in shipments:
         row = conn.execute(
@@ -144,6 +190,7 @@ async def api_shipments(state: str | None = None):
         ).fetchone()
         s["last_event"] = dict(row) if row else None
     conn.close()
+    _annotate_stalled(shipments)
     return shipments
 
 

@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from "react"
 import { Link } from "react-router-dom"
-import { ExternalLink, Copy, Check, RefreshCw, ChevronDown, Package } from "lucide-react"
+import { ExternalLink, Copy, Check, RefreshCw, ChevronDown, Package, Archive, ArchiveRestore } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { StateBadge } from "@/components/StateBadge"
-import { fetchShipments, type Shipment } from "@/lib/api"
+import { fetchShipments, archiveShipment, type Shipment } from "@/lib/api"
 import { relativeTime, cn } from "@/lib/utils"
 
 const CARRIER_EMOJI: Record<string, string> = {
@@ -47,7 +47,11 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-function ShipmentCard({ shipment }: { shipment: Shipment }) {
+function ShipmentCard({ shipment, onArchive, onUnarchive }: {
+  shipment: Shipment
+  onArchive?: (id: number) => void
+  onUnarchive?: (id: number) => void
+}) {
   return (
     <Link to={`/shipments/${shipment.id}`}>
       <Card className="group hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
@@ -73,7 +77,14 @@ function ShipmentCard({ shipment }: { shipment: Shipment }) {
               )}
             </div>
             <div className="flex flex-col items-end gap-1.5 shrink-0">
-              <StateBadge state={shipment.current_state} />
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                <StateBadge state={shipment.current_state} />
+                {shipment.stalled && (
+                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                    Stalled
+                  </span>
+                )}
+              </div>
               {shipment.tracking_link && (
                 <a
                   href={shipment.tracking_link}
@@ -97,6 +108,29 @@ function ShipmentCard({ shipment }: { shipment: Shipment }) {
             <span>Started {relativeTime(shipment.first_seen_at)}</span>
             <span>Updated {relativeTime(shipment.last_updated_at)}</span>
           </div>
+          {/* Archive / Unarchive button */}
+          {(onArchive || onUnarchive) && (
+            <div className="mt-2 pt-2 border-t border-border flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+              {onArchive && (
+                <button
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); onArchive(shipment.id) }}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  title="Archive"
+                >
+                  <Archive className="h-3 w-3" /> Archive
+                </button>
+              )}
+              {onUnarchive && (
+                <button
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); onUnarchive(shipment.id) }}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  title="Unarchive"
+                >
+                  <ArchiveRestore className="h-3 w-3" /> Unarchive
+                </button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </Link>
@@ -118,20 +152,24 @@ function EmptyState() {
 export default function Dashboard() {
   const [active, setActive] = useState<Shipment[]>([])
   const [delivered, setDelivered] = useState<Shipment[]>([])
+  const [archived, setArchived] = useState<Shipment[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [showDelivered, setShowDelivered] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
   const load = useCallback(async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true)
     try {
-      const [a, d] = await Promise.all([
+      const [a, d, ar] = await Promise.all([
         fetchShipments("active"),
         fetchShipments("delivered"),
+        fetchShipments("archived"),
       ])
       setActive(a)
       setDelivered(d)
+      setArchived(ar)
       setLastRefresh(new Date())
     } finally {
       setLoading(false)
@@ -144,6 +182,16 @@ export default function Dashboard() {
     const interval = setInterval(() => load(), 60_000)
     return () => clearInterval(interval)
   }, [load])
+
+  const handleArchive = async (id: number) => {
+    await archiveShipment(id, true)
+    load()
+  }
+
+  const handleUnarchive = async (id: number) => {
+    await archiveShipment(id, false)
+    load()
+  }
 
   const total = active.length + delivered.length
 
@@ -166,6 +214,7 @@ export default function Dashboard() {
           <h1 className="text-xl font-bold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             {total === 0 ? "No shipments" : `${active.length} active · ${delivered.length} delivered`}
+            {archived.length > 0 && ` · ${archived.length} archived`}
             {" · "}<span className="tabular-nums">refreshed {relativeTime(lastRefresh.toISOString())}</span>
           </p>
         </div>
@@ -181,7 +230,7 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {total === 0 ? (
+      {total === 0 && archived.length === 0 ? (
         <EmptyState />
       ) : (
         <>
@@ -192,14 +241,14 @@ export default function Dashboard() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {active.map(s => (
-                  <ShipmentCard key={s.id} shipment={s} />
+                  <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} />
                 ))}
               </div>
             </section>
           )}
 
           {delivered.length > 0 && (
-            <section>
+            <section className="mb-4">
               <button
                 onClick={() => setShowDelivered(v => !v)}
                 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 hover:text-foreground transition-colors"
@@ -210,7 +259,27 @@ export default function Dashboard() {
               {showDelivered && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {delivered.map(s => (
-                    <ShipmentCard key={s.id} shipment={s} />
+                    <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {archived.length > 0 && (
+            <section>
+              <button
+                onClick={() => setShowArchived(v => !v)}
+                className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 hover:text-foreground transition-colors"
+              >
+                <ChevronDown className={cn("h-4 w-4 transition-transform", showArchived && "rotate-180")} />
+                <Archive className="h-3.5 w-3.5" />
+                Archived ({archived.length})
+              </button>
+              {showArchived && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {archived.map(s => (
+                    <ShipmentCard key={s.id} shipment={s} onUnarchive={handleUnarchive} />
                   ))}
                 </div>
               )}
