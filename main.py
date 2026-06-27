@@ -1,5 +1,6 @@
 import os
 import time
+import uuid
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, HTTPException, Request
@@ -66,13 +67,15 @@ async def ingest_email(payload: EmailPayload):
         raise HTTPException(429, detail="Rate limit exceeded (30/min)")
     _ingest_timestamps.append(now)
 
+    request_id = str(uuid.uuid4())[:8]
     email = {"from": payload.from_, "subject": payload.subject, "body": payload.body, "html": payload.html, "product_name": payload.product_name, "message_id": payload.message_id, "date": payload.date}
     try:
         result = process_email(email)
     except Exception as e:
         import logging
-        logging.getLogger("trackbox.ingest").exception("Ingest failed: %s", e)
-        return {"shipment_id": None, "state": None, "action": "error", "parser_status": "error", "error": str(e)}
+        logging.getLogger("trackbox.ingest").exception("Ingest failed [%s]: %s", request_id, e)
+        return {"shipment_id": None, "state": None, "action": "error", "parser_status": "error", "error": str(e), "request_id": request_id}
+    result["request_id"] = request_id
     return result
 
 
