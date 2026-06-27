@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>GE Georgian Post</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <linearGradient x1="-4.30994759%" y1="49.1190451%" x2="93.9730615%" y2="55.8872003%" id="linearGradient-4">
+            <stop stop-color="#153F6A" offset="0%"></stop>
+            <stop stop-color="#044A76" offset="45.5%"></stop>
+            <stop stop-color="#1FB3E7" offset="94.92%"></stop>
+            <stop stop-color="#1FB3E7" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="7.12810962%" y1="54.6211149%" x2="100.167852%" y2="38.5648163%" id="linearGradient-5">
+            <stop stop-color="#1FB3E7" offset="0%"></stop>
+            <stop stop-color="#153F6A" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="GE-Georgian-Post" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(49.5, 116.4)">
+                <path d="M0,75.3972603 L135.013699,366.246575 C135.013699,366.246575 389.041096,374.356164 794.082192,282.082192 L568.109589,278.575342 C701.150685,258.630137 799.780822,233.643836 799.780822,233.643836 C799.780822,233.643836 393.643836,225.972603 0,75.3972603 Z" id="XMLID_20_" fill="url(#linearGradient-4)"></path>
+                <path d="M35.0684932,150.794521 L135.013699,366.246575 C135.013699,366.246575 482.849315,243.068493 800,0 C800,0 480.657534,108.493151 35.0684932,150.794521 Z" id="XMLID_24_" fill="url(#linearGradient-5)"></path>
+            </g>
+        </g>
+    </g>
+</svg>

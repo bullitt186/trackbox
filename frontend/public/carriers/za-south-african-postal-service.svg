@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ZA South African Postal Service</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="ZA-South-African-Postal-Service" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(125, 50)" fill-rule="nonzero">
+                <polygon id="Path" fill="#1E3F75" points="649.207746 202.90493 265.84507 48.415493 581.426056 0"></polygon>
+                <path d="M0,209.947183 L364.43662,499.559859 L297.09507,208.18662 L0,209.947183 Z M290.052817,185.739437 L260.56338,51.9366197 L5.28169014,183.978873 L290.052817,185.739437 Z M326.584507,211.707746 L415.052817,500 L645.68662,208.626761 L326.584507,211.707746 Z" id="Shape" fill="#C1001E"></path>
+            </g>
+        </g>
+    </g>
+</svg>

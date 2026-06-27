@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>CL Correos Chile</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="CL-Correos-Chile" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(50, 125)" fill-rule="nonzero">
+                <g id="g10984" transform="translate(667.6875, 101.6976) scale(-1, 1) rotate(-180) translate(-667.6875, -101.6976)translate(535.3751, 18.0493)" fill="#EE2722">
+                    <path d="M192.203822,167.291371 C192.203822,167.291371 85.9508962,95.3408607 0,0 C125.518162,128.628542 264.624934,146.070199 264.624934,146.070199 C229.88133,158.842609 191.247913,167.541378 192.203822,167.291371" id="path10986"></path>
+                </g>
+                <g id="g10988" transform="translate(217.1714, 271.9257) scale(-1, 1) rotate(-180) translate(-217.1714, -271.9257)translate(0, 193.1441)" fill="#EE2722">
+                    <path d="M132.59924,157.563162 C52.1705543,106.164688 0,63.8694058 0,63.8694058 C349.744925,145.467241 434.342843,0 434.342843,0 C434.342843,0 372.341135,126.584368 132.59924,157.563162" id="path10990"></path>
+                </g>
+                <g id="g10992" transform="translate(430.0891, 180.7295) scale(-1, 1) rotate(-180) translate(-430.0891, -180.7295)translate(132.5993, 10.7556)" fill="#18468B">
+                    <path d="M594.979619,332.648866 C572.420174,338.354905 515.411252,341.722645 476.314587,338.97257 C307.464349,333.288589 120.95186,234.807936 0,157.555809 C239.734543,126.584368 301.743603,0 301.743603,0 C344.899203,163.35744 594.979619,332.648866 594.979619,332.648866" id="path10994"></path>
+                </g>
+                <g id="g10996" transform="translate(367.4712, 96.5713) scale(-1, 1) rotate(-180) translate(-367.4712, -96.5713)translate(10.3584, 0)" fill="#F46F1B">
+                    <path d="M714.100546,175.776899 L714.22555,175.776899 C341.774117,260.668943 0,6.72812645 0,6.72812645 C45.1777146,7.22078707 85.7597145,4.72071823 122.23866,0 C243.19052,77.2521273 429.695656,175.725427 598.5606,181.41676 C635.995454,184.049186 689.842525,181.071163 714.100546,175.776899" id="path10998"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

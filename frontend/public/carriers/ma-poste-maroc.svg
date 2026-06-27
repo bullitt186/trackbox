@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>MA Poste Maroc</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="-5.68434189e-14" y="75" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-4">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <polygon id="path-5" points="0 0 900 0 900 683.942688 0 683.942688"></polygon>
+    </defs>
+    <g id="MA-Poste-Maroc" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, -35)">
+            <mask id="mask-3" fill="white">
+                <use xlink:href="#path-2"></use>
+            </mask>
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-4)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" mask="url(#mask-3)">
+                <g id="Group-27">
+                    <mask id="mask-6" fill="white">
+                        <use xlink:href="#path-5"></use>
+                    </mask>
+                    <g id="Clip-26"></g>
+                    <path d="M900,46.7979119 C900,46.7979119 730.701039,0 451.483102,0 C172.278065,0 -0.000860018595,46.7979119 -0.000860018595,46.7979119 L-0.000860018595,683.942688 C-0.000860018595,683.942688 172.278065,642.223186 451.483102,642.223186 C730.701039,642.223186 900,683.942688 900,683.942688 L900,46.7979119 Z" id="Fill-25" fill="#FFE535" mask="url(#mask-6)"></path>
+                </g>
+                <g id="Group" transform="translate(172.2788, 156.7709)">
+                    <path d="M334.307398,59.9972717 C334.307398,93.1259361 307.453075,119.976688 274.331552,119.976688 C241.202888,119.976688 214.344994,93.1259361 214.344994,59.9972717 C214.344994,26.8721784 241.202888,0 274.331552,0 C307.453075,0 334.307398,26.8721784 334.307398,59.9972717" id="Fill-28" fill="#004594"></path>
+                    <path d="M23.200064,94.6861294 C51.8720534,157.597381 94.4175862,227.897142 175.830466,274.145858 C156.389651,329.650744 104.602231,428.651063 0.0739208097,498.925827 C217.458238,405.528491 448.694673,293.568818 555.994121,33.6389679 C497.732381,80.8125861 408.01323,157.597381 270.177703,161.282708 C132.352889,165.007317 34.2917565,105.777822 23.200064,94.6861294" id="Fill-30" fill="#004594"></path>
+                    <path d="M555.995192,33.6382537 C448.695744,293.568104 217.455739,405.527777 0.0749921258,498.925113 L0,500 C41.5420667,495.28978 91.786791,491.047369 149.548583,488.77975 C219.598371,445.998527 453.402393,287.125923 555.995192,33.6382537" id="Fill-32" fill="#FEFEFE"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

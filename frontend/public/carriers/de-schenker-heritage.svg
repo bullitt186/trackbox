@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>DE Schenker heritage</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="DE-Schenker-heritage" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(187, 50.2712)" fill-rule="nonzero">
+                <path d="M202.466291,3.19000419e-13 L0,3.19000419e-13 L0,192.14634 C23.0413765,96.8794487 102.037533,21.9396047 202.466291,3.19000419e-13" id="path8" fill="#EC0016"></path>
+                <path d="M526.820532,192.14634 L526.820532,3.19000419e-13 L324.334298,3.19000419e-13 C424.736465,21.9396047 503.732621,96.8794487 526.820532,192.14634" id="path10" fill="#EC0016"></path>
+                <path d="M0,307.740277 L0,499.911813 L202.466291,499.911813 C102.037533,477.953311 23.0413765,402.963075 0,307.740277" id="path12" fill="#EC0016"></path>
+                <path d="M324.334298,499.918112 L526.820532,499.918112 L526.820532,307.740277 C503.732621,402.963075 424.736465,477.953311 324.334298,499.918112" id="path14" fill="#EC0016"></path>
+                <path d="M359.913481,307.078877 C382.363201,333.245147 397.939065,352.684027 397.939065,379.284931 C397.939065,432.455245 337.177905,477.247817 263.672855,500 C316.48986,459.25142 325.378007,423.201935 325.378007,408.966073 C325.378007,392.431057 323.01138,380.677022 304.743145,357.968933 L163.350463,195.894277 C140.900743,169.740605 128.289811,149.476549 128.289811,122.881943 C128.289811,62.3543344 193.139386,22.1033801 263.672855,3.19000419e-13 C205.28497,39.161218 196.981831,76.9933356 196.981831,91.2228983 C196.981831,107.72012 200.239268,122.30243 218.507503,144.934931 L359.913481,307.078877" id="path16" fill="#003878"></path>
+            </g>
+        </g>
+    </g>
+</svg>

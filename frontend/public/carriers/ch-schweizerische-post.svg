@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>CH Schweizerische Post</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="CH-Schweizerische-Post" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                <use fill="#FFCC00" fill-rule="evenodd" xlink:href="#path-1"></use>
+            </g>
+            <g id="Group" transform="translate(63, 50)" fill-rule="nonzero">
+                <polygon id="Path" fill="#FF0000" points="352.941176 195.588235 352.941176 0 142.647059 0 142.647059 148.529412 0 148.529412 0 351.470588 142.647059 351.470588 142.647059 500 352.941176 500 352.941176 304.411765 302.941176 304.411765 302.941176 452.941176 192.647059 452.941176 192.647059 304.411765 50 304.411765 50 195.588235 192.647059 195.588235 192.647059 47.0588235 302.941176 47.0588235 302.941176 195.588235"></polygon>
+                <path d="M640.622647,178.018529 C640.622647,213.499706 611.335294,241.176618 574.192794,241.176618 L517.647059,241.176618 L517.647059,119.117794 L574.192794,119.117794 C612.765,119.117794 640.622647,143.954265 640.622647,178.018529 Z M598.480294,0 L382.352941,0 L382.352941,500 L517.647059,500 L517.647059,351.470588 L598.480294,351.470588 C697.764265,351.470588 774.908235,275.715147 774.908235,177.857353 C774.908235,79.2847059 696.338088,0 598.480294,0 Z" id="Shape" fill="#000000"></path>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { fetchScrapeLog, fetchShipments, type ScrapeLogEntry, type Shipment } from "@/lib/api"
+import { CarrierIcon } from "@/components/CarrierIcon"
 
 interface ScraperOption {
   key: string
@@ -141,7 +142,10 @@ export default function Settings() {
           <Card key={s.carrier}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{activeName} Scraper</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CarrierIcon carrier={s.carrier} size={20} />
+                  {activeName} Scraper
+                </CardTitle>
                 <div className="flex items-center gap-2">
                   {form.enabled ? (
                     <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
@@ -322,6 +326,13 @@ export default function Settings() {
           )}
         </CardContent>
       </Card>
+
+      <p className="text-xs text-muted-foreground text-center pt-2">
+        Carrier icons by{" "}
+        <a href="https://50north.de" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">50north.de</a>
+        {", "}
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">CC BY 4.0</a>
+      </p>
     </div>
   )
 }

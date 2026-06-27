@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>BH Bahrain Post</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="-5.68434189e-14" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="BH-Bahrain-Post" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(50, 91)">
+                <path d="M87.2094248,232.587096 C55.0085614,201.795402 27.0424081,166.621043 4.22695208,128.037637 C100.113598,190.363015 196.745003,231.844554 293.365325,257.649021 C231.134151,257.140324 145.999413,252.339841 87.2094248,232.587096 L87.2094248,232.587096 Z M800,127.679665 C781.211453,168.273477 759.007209,209.584896 731.703803,240.21035 C726.45724,246.095832 721.077684,251.867162 715.576773,257.513812 C619.042896,356.601703 484.145605,418.140208 334.879004,418.140208 C235.968991,418.140208 143.393309,391.088379 64.0830983,344.026133 C238.126797,356.450978 420.844947,300.867778 568.187032,197.664315 C563.35053,234.344817 542.715601,269.729748 508.962601,303.642892 C616.650689,259.589052 691.086717,210.776844 800,127.679665 L800,127.679665 Z M133.810075,327.983886 C83.1226692,300.575194 37.8574872,264.434975 9.23579167e-14,221.586936 C121.711616,284.564532 304.025801,277.92487 381.026925,273.839223 C329.872937,296.521132 226.332005,321.730457 133.810075,327.983886 L133.810075,327.983886 Z" id="path858" fill="#EF3F32"></path>
+                <g id="Group" transform="translate(351.0409, 0)" fill="#007CC2">
+                    <path d="M151.564604,0 C235.26967,0 303.129208,67.8595375 303.129208,151.564604 C303.129208,175.693363 297.480896,198.49829 287.44992,218.748649 C267.430082,232.38927 246.595109,244.877287 215.327411,257.667862 C233.496434,231.545874 240.880855,192.526363 240.004211,157.662875 C185.097611,203.083215 120.824444,239.853486 53.1488798,266.821086 C20.6244008,239.021174 0,197.704767 0,151.564604 C0,67.8595375 67.8595375,0 151.564604,0 L151.564604,0 Z" id="path860"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

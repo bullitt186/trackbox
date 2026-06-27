@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>PL Poczta Polska alt</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="PL-Poczta-Polska-alt" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                <use fill="#D52B1E" fill-rule="evenodd" xlink:href="#path-1"></use>
+            </g>
+            <g id="Logo" transform="translate(50.0711, 78)" fill="#FFFFFF" fill-rule="nonzero">
+                <ellipse id="Oval" transform="translate(223.3606, 164.3122) rotate(-33.049) translate(-223.3606, -164.3122)" cx="223.360596" cy="164.312184" rx="67.8445728" ry="33.1379561"></ellipse>
+                <path d="M784.77909,177.454735 C784.77909,177.454735 775.171043,180.788139 766.347327,193.729589 C757.523611,206.67104 672.423771,336.67379 560.264535,350.203488 C448.105299,363.733186 426.14405,341.96802 390.260938,280.202007 C390.260938,280.202007 365.750616,202.553305 402.418058,125.100686 C439.085501,47.4519844 481.243255,7.45113805 425.555803,2.78650106e-14 C425.555803,2.78650106e-14 368.495772,4.70598193 289.082327,55.2952876 C319.867292,52.1579663 344.377614,59.0208567 355.946487,76.6682889 C379.868561,113.335731 338.102972,182.748965 263.003344,231.76961 C187.707633,280.790255 107.509858,290.790467 83.5877827,254.123024 C73.3914885,238.240335 75.1562318,216.475169 86.725104,192.749176 C72.9993234,204.514131 -26.4145448,292.55521 6.72341126,316.673367 C6.72341126,316.673367 16.9197054,325.497083 65.1560202,320.791101 C113.392335,316.085119 180.844743,328.242239 219.669093,345.301424 C258.493444,362.360608 315.553475,399.028051 335.357816,406.479189 C355.162156,413.930327 467.321392,473.147266 574.774646,425.499199 C682.2279,377.851132 778.112282,270.397878 799.877448,200.396397 C799.681366,199.808149 803.01477,175.297827 784.77909,177.454735 Z" id="Path"></path>
+                <path d="M643.991797,156.866064 C664.384385,186.866699 648.305614,233.338271 607.912602,260.789832 C567.519591,288.241393 518.302863,286.280567 497.910275,256.279932 C477.517686,226.279298 493.596458,179.807726 533.98947,152.356165 C574.186399,124.904604 623.599209,126.865429 643.991797,156.866064 Z" id="Path"></path>
+            </g>
+        </g>
+    </g>
+</svg>

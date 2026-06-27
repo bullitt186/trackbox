@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>DE Deutsche Post</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="DE-Deutsche-Post" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                <use fill="#FECC00" fill-rule="evenodd" xlink:href="#path-1"></use>
+            </g>
+            <g id="Logo" transform="translate(134, 50)" fill="#000000" fill-rule="nonzero">
+                <path d="M207.294456,414.244742 L291.238412,414.244742 L206.46632,500 L122.555725,500 L207.294456,414.244742 Z M94.0870756,414.244742 L178.031031,414.244742 L93.2589395,500 L9.32087108,500 L94.0870756,414.244742 Z M394.639641,414.244742 L310.729046,414.244742 L395.467777,500 L479.411732,500 L394.639641,414.244742 Z M507.876457,414.244742 L423.938389,414.244742 L508.67712,500 L592.621075,500 L507.876457,414.244742 Z M456.404463,176.216452 C470.943943,136.560115 481.068005,76.2003761 483.179555,33.9654356 L632.090983,70.9901834 C620.167394,245.775958 489.055004,398.869277 294.594129,398.806499 C74.594479,398.70836 -10.4327257,207.463871 1.01007409,62.5243562 L65.6203882,41.979909 C55.1116945,124.450096 80.6367326,183.911052 98.2414929,211.206182 C77.2790528,94.5174904 165.381351,0.062878637 275.617646,4.07673647e-05 C374.758487,-0.0627154615 456.783208,72.3344327 456.404463,176.216452 L456.404463,176.216452 Z M156.742831,179.894004 L156.742831,179.894004 C156.742831,245.717086 210.106587,299.080841 275.929669,299.080841 C341.729202,299.080841 395.083145,245.717086 395.083145,179.894004 C395.083145,114.096433 341.725277,60.7385651 275.929669,60.7385651 C210.106587,60.7385651 156.742831,114.096433 156.742831,179.894004 Z" id="path10"></path>
+            </g>
+        </g>
+    </g>
+</svg>

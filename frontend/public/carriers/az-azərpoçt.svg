@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>AZ Azərpoçt</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="AZ-Azərpoçt" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(165, 50)" fill="#034C7D" fill-rule="nonzero">
+                <path d="M562.906885,6.38977648 C571.375507,14.9178632 571.375507,28.7791505 562.906885,37.3072372 L312.788593,288.810345 L411.109661,387.663205 C419.578283,396.191291 419.578283,410.04 411.109661,418.568087 C407.006696,422.693769 401.552753,424.970442 395.73605,424.970442 C389.931854,424.970442 384.465402,422.693769 380.362437,418.568087 L282.053877,319.715228 L243.938826,358.041308 L205.823775,319.715228 L107.515215,418.568087 C103.399741,422.693769 97.945798,424.970442 92.1416019,424.970442 C86.3248981,424.970442 80.8709554,422.693769 76.7679906,418.568087 C68.2993689,410.04 68.2993689,396.191291 76.7679906,387.663205 L175.089059,288.810345 L76.7679906,189.944908 C68.2993689,181.429398 68.2993689,167.555534 76.7679906,159.040024 C80.8834645,154.914342 86.3374073,152.637669 92.1416019,152.637669 C97.945798,152.637669 103.41225,154.914342 107.515215,159.040024 L243.938826,296.218963 L417.00142,122.198183 L44.2319727,122.198183 L44.2319727,455.523132 L443.645679,455.523132 L443.645679,214.170712 C443.645679,214.170712 477.532673,180.08352 480.122046,177.49239 C482.711418,174.888682 487.877652,174.133984 487.877652,180.712435 L487.877652,500 L0,500 L0,77.7087364 L461.245901,77.7087364 L532.172169,6.38977648 C536.275135,2.26409439 541.729078,0 547.533272,0 C553.337468,0 558.803919,2.26409439 562.906885,6.38977648 Z" id="Fill-1"></path>
+            </g>
+        </g>
+    </g>
+</svg>

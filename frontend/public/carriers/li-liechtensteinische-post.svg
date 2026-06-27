@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>LI Liechtensteinische Post</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="LI-Liechtensteinische-Post" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo">
+                <path d="M900,300 L900,520 C900,564.18278 864.18278,600 820,600 L80,600 C35.81722,600 0,564.18278 0,520 L0,300 L900,300 Z" id="Path" fill="#C83640" fill-rule="nonzero"></path>
+                <path d="M820,0 C864.18278,0 900,35.81722 900,80 L900,300 L0,300 L0,80 C0,35.81722 35.81722,0 80,0 L820,0 Z" id="Path" fill="#0061AF" fill-rule="nonzero"></path>
+                <path d="M438.75,422.25 C452.25,422.25 456.75,422.25 466.5,422.25 C473.25,422.25 476.25,422.25 480.75,422.25 C525,422.25 561,396 575.25,381 L713.25,228.75 L445.5,228.75 L416.25,261.75 L585,261.75 L438.75,422.25 L438.75,422.25 Z" id="Path" fill="#FED300" fill-rule="nonzero"></path>
+                <path d="M312.75,488.25 L485.25,300 L387,300 L184.5,521.25 C194.25,521.25 228,521.25 234.75,521.25 C277.5,521.25 303,497.25 312.75,488.25 L312.75,488.25 Z" id="Path" fill="#FED300" fill-rule="nonzero"></path>
+                <path d="M453,194.25 L469.5,194.25 L469.5,164.25 L478.5,164.25 C487.5,164.25 491.25,163.5 495,161.25 C504,156.75 509.25,148.5 509.25,137.25 C509.25,128.25 505.5,120.75 498,116.25 C493.5,114 489,112.5 475.5,112.5 L454.5,112.5 L454.5,194.25 L453,194.25 Z M480,126 C486.75,126 491.25,130.5 491.25,138 C491.25,141.75 490.5,144.75 489,146.25 C486.75,149.25 484.5,150.75 478.5,150.75 L470.25,150.75 L470.25,126 L480,126 L480,126 Z" id="Shape" fill="#FFFFFF"></path>
+                <path d="M540,116.25 C528.75,123 522,136.5 522,153.75 C522,165.75 525,175.5 531,183.75 C537,192 545.25,195 557.25,195 C564,195 568.5,194.25 573.75,191.25 C585.75,184.5 591.75,171 591.75,153 C591.75,127.5 578.25,111.75 557.25,111.75 C550.5,112.5 544.5,114 540,116.25 L540,116.25 Z M570,135 C571.5,139.5 572.25,145.5 572.25,153.75 C572.25,174 567.75,183 556.5,183 C552.75,183 549.75,182.25 546.75,180 C542.25,176.25 539.25,168 539.25,153.75 C539.25,144 540.75,137.25 543,132 C545.25,127.5 549.75,125.25 555.75,125.25 C564.75,124.5 569.25,131.25 570,135 L570,135 Z" id="Shape" fill="#FFFFFF"></path>
+                <path d="M636,111 C618.75,111 606.75,121.5 606.75,135.75 C606.75,140.25 608.25,144.75 609.75,147.75 C612.75,153 618,156 625.5,158.25 L634.5,160.5 C642,162 645,165.75 645,171 C645,178.5 639.75,182.25 630.75,182.25 C622.5,182.25 615.75,180 608.25,175.5 L602.25,188.25 C610.5,192.75 620.25,195.75 630,195.75 C650.25,195.75 663,185.25 663,168.75 C663,156.75 655.5,148.5 642.75,144.75 L633,141.75 C626.25,140.25 624,138 624,133.5 C624,128.25 628.5,124.5 635.25,124.5 C641.25,124.5 646.5,126 654,130.5 L661.5,118.5 C656.25,114 646.5,111 636,111 L636,111 Z" id="Path" fill="#FFFFFF" fill-rule="nonzero"></path>
+                <polygon id="Path" fill="#FFFFFF" fill-rule="nonzero" points="677.25 126.75 697.5 126.75 697.5 194.25 714 194.25 714 126.75 732.75 126.75 735.75 113.25 677.25 113.25"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

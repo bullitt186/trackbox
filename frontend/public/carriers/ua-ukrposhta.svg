@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>UA Ukrposhta</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="UA-Ukrposhta" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(278.0001, 49.9362)" fill="#FABC26" fill-rule="nonzero">
+                <g id="g16" transform="translate(171.7517, 250) scale(-1, 1) rotate(-180) translate(-171.7517, -250)">
+                    <path d="M328.552758,212.96046 C328.537316,212.963711 163.008415,250.423581 163.008415,250.423581 C113.662005,261.589207 82.716365,310.640587 93.8795527,359.983746 C105.041928,409.326904 154.093307,440.274983 203.439717,429.109357 C252.779625,417.946169 283.730954,368.895602 272.561265,319.552444 C266.973575,294.848761 251.877467,274.774529 232.016177,262.26867 C232.016177,262.26867 231.964974,262.231284 231.943029,262.218279 C231.361909,261.798898 230.980727,261.116184 230.980727,260.348131 C230.980727,259.272043 231.726836,258.367447 232.727338,258.126059 C232.727338,258.126059 306.37024,241.471087 306.383244,241.471087 C308.132293,241.07365 309.947987,241.749862 311.028138,243.172183 C311.037079,243.185187 311.028138,243.175434 311.028138,243.175434 C331.321001,270.0191 343.503383,303.51354 343.503383,339.744525 C343.503383,425.061025 276.844483,494.78076 192.77231,499.739378 C192.026201,499.774326 187.463395,499.952319 185.924038,499.977515 C148.705556,500.558635 110.962847,489.884725 78.135435,466.899206 C-4.74332115,408.863634 -24.8875798,294.630129 33.1482358,211.74783 L180.424938,1.41279547 C181.047509,0.555594328 182.060201,0 183.202934,0 C184.348919,0 185.364862,0.565119002 185.987433,1.42549883 C185.987433,1.42549883 330.609841,207.675115 330.626096,207.693809 C330.994274,208.243231 331.210466,208.903188 331.210466,209.614348 C331.210466,211.24636 330.073422,212.611788 328.552758,212.96046" id="path22"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

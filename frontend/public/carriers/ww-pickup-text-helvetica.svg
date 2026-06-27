@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>WW Pickup text</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-4">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="WW-Pickup-text" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <mask id="mask-3" fill="white">
+                <use xlink:href="#path-2"></use>
+            </mask>
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-4)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" mask="url(#mask-3)">
+                <g transform="translate(0, 22)">
+                    <rect id="Rectangle" stroke="#979797" stroke-width="1" fill="#FF6600" fill-rule="evenodd" x="0" y="420" width="900" height="158"></rect>
+                    <text id="Abholung" stroke="none" fill="none" font-family="Helvetica-Bold, Helvetica" font-size="100" font-weight="bold">
+                        <tspan x="216.748047" y="529.999268" fill="#FFFFFF">Abholung</tspan>
+                    </text>
+                    <path d="M600,120 L525,120 L525,90 L570,90 C586.5,90 600,76.5 600,60 L600,30 C600,13.5 586.5,0 570,0 L450,0 C433.5,0 420,13.5 420,30 L420,60 C420,76.5 433.5,90 450,90 L495,90 L495,120 L300,120 L270,270 L630,270 L600,120 Z M360,240 C351.72,240 345,233.28 345,225 C345,216.72 351.72,210 360,210 C368.28,210 375,216.72 375,225 C375,233.28 368.28,240 360,240 Z M360,180 C351.72,180 345,173.28 345,165 C345,156.72 351.72,150 360,150 C368.28,150 375,156.72 375,165 C375,173.28 368.28,180 360,180 Z M420,240 C411.72,240 405,233.28 405,225 C405,216.72 411.72,210 420,210 C428.28,210 435,216.72 435,225 C435,233.28 428.28,240 420,240 Z M420,180 C411.72,180 405,173.28 405,165 C405,156.72 411.72,150 420,150 C428.28,150 435,156.72 435,165 C435,173.28 428.28,180 420,180 Z M480,240 C471.72,240 465,233.28 465,225 C465,216.72 471.72,210 480,210 C488.28,210 495,216.72 495,225 C495,233.28 488.28,240 480,240 Z M480,180 C471.72,180 465,173.28 465,165 C465,156.72 471.72,150 480,150 C488.28,150 495,156.72 495,165 C495,173.28 488.28,180 480,180 Z M450,60 L450,30 L570,30 L570,60 L450,60 Z M540,240 C531.72,240 525,233.28 525,225 C525,216.72 531.72,210 540,210 C548.28,210 555,216.72 555,225 C555,233.28 548.28,240 540,240 Z M540,180 C531.72,180 525,173.28 525,165 C525,156.72 531.72,150 540,150 C548.28,150 555,156.72 555,165 C555,173.28 548.28,180 540,180 Z M270,330 C270,346.56 283.44,360 300,360 L600,360 C616.56,360 630,346.56 630,330 L630,300 L270,300 L270,330 Z" id="Shape" stroke="none" fill="#FF6600" fill-rule="nonzero"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>BE bpost alt2</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <path d="M543.984161,49.6411402 C479.864355,189.601577 330.251474,332.319855 210.285385,368.86125 C89.6298364,405.402645 44.1254579,321.28849 108.934724,181.328054 L44.8149182,200.632941 C15.1681262,265.442208 9.18545613e-15,322.667411 9.18545613e-15,369.55071 L9.18545613e-15,373.687472 C0.68946028,477.106514 73.0827897,525.368733 199.254021,486.758958 C383.339916,431.602135 611.551268,213.043226 708.765168,9.18545613e-15 L543.984161,49.6411402 Z" id="path-4"></path>
+        <path d="M15.0332469,66.8776472 C-18.0608465,138.581516 5.38080298,181.328054 66.7427679,162.712626 C128.104733,144.097199 204.634824,71.0144088 237.039457,0 L15.0332469,66.8776472 L15.0332469,66.8776472 Z" id="path-6"></path>
+    </defs>
+    <g id="BE-bpost-alt2" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+                <use fill="#D0091B" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(96, 50)">
+                <g id="Clipped" transform="translate(-0, 0)">
+                    <mask id="mask-5" fill="white">
+                        <use xlink:href="#path-4"></use>
+                    </mask>
+                    <g id="SVGID_1_"></g>
+                    <polygon id="Path" fill="#FFFFFF" fill-rule="nonzero" mask="url(#mask-5)" points="-246.82678 173.05453 475.727593 -333.009315 955.591948 353.003663 233.037575 858.378048"></polygon>
+                </g>
+                <g id="Clipped" transform="translate(122.8588, 105.4874)">
+                    <mask id="mask-7" fill="white">
+                        <use xlink:href="#path-6"></use>
+                    </mask>
+                    <g id="SVGID_4_"></g>
+                    <polygon id="Path" fill="#FFFFFF" fill-rule="nonzero" mask="url(#mask-7)" points="-103.553921 59.2935841 152.925303 -119.966089 321.843071 121.345009 66.0533076 301.294142"></polygon>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

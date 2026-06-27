@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>DE iloxx</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="DE-iloxx" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(50, 159)">
+                <polyline id="Path" fill="#E56A19" points="44.0446516 142.048779 2.46422104e-14 186.006728 2.46422104e-14 281.205601 44.0446516 281.205601"></polyline>
+                <polyline id="Path" fill="#4A4A49" fill-rule="nonzero" points="112.886095 80.2302027 68.9281457 124.708365 68.9281457 281.118899 112.886095 281.118899"></polyline>
+                <polyline id="Path" fill="#4A4A49" points="311.693942 281.118899 450.67736 142.222183 392.933781 142.222183 351.143384 184.272687 309.352986 142.222183 254.383873 142.222183 323.918934 211.670541 254.383873 281.118899"></polyline>
+                <polygon id="Path" fill="#4A4A49" points="363.021567 250.773174 393.020483 281.118899 447.469383 281.118899 390.332719 223.548724"></polygon>
+                <polygon id="Path" fill="#4A4A49" points="561.829414 250.339664 592.521946 281.118899 647.317655 281.118899 589.053864 222.94181"></polygon>
+                <polygon id="Path" fill="#4A4A49" points="578.823019 212.624264 508.681045 142.222183 453.538528 142.222183 523.246993 211.843945 453.972039 281.118899 510.415086 281.118899"></polygon>
+                <ellipse id="Oval" fill="#E56A19" cx="22.1090279" cy="87.5131765" rx="22.0223258" ry="23.2361548"></ellipse>
+                <path d="M198.374336,142.308885 C161.872765,142.308885 132.394061,173.52163 132.394061,211.930647 C132.394061,250.339664 161.959467,281.552409 198.374336,281.552409 C234.789206,281.552409 264.354611,250.339664 264.354611,211.930647 C264.354611,173.52163 234.875908,142.308885 198.374336,142.308885 Z M198.374336,244.097115 C181.467433,244.097115 167.768505,229.704571 167.768505,211.843945 C167.768505,194.070021 181.467433,179.590775 198.374336,179.590775 C215.28124,179.590775 228.980167,193.983319 228.980167,211.843945 C228.980167,229.704571 215.28124,244.097115 198.374336,244.097115 Z" id="Shape" fill="#4A4A49"></path>
+                <g id="Group" transform="translate(524.4608, 0)" fill="#E5D8B7">
+                    <polygon id="Rectangle" transform="translate(137.746, 63.7593) rotate(-45) translate(-137.746, -63.7593)" points="92.6613883 18.674671 182.830676 18.674671 182.830676 108.843959 92.6613883 108.843959"></polygon>
+                    <polygon id="Path" points="148.000434 137.800377 211.726455 201.526399 275.539178 137.800377 211.726455 74.0743557"></polygon>
+                    <polygon id="Path" points="0 137.800377 63.7260215 201.613101 127.538745 137.800377 63.7260215 74.0743557"></polygon>
+                    <polygon id="Rectangle" transform="translate(137.769, 211.8035) rotate(-45) translate(-137.769, -211.8035)" points="92.684347 166.718872 182.853635 166.718872 182.853635 256.88816 92.684347 256.88816"></polygon>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

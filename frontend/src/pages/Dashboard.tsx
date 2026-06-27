@@ -6,24 +6,7 @@ import { Button } from "@/components/ui/button"
 import { StateBadge } from "@/components/StateBadge"
 import { fetchShipments, archiveShipment, type Shipment } from "@/lib/api"
 import { relativeTime, cn } from "@/lib/utils"
-
-const CARRIER_EMOJI: Record<string, string> = {
-  ups: "🟤",
-  fedex: "🟣",
-  usps: "🔵",
-  dhl: "🟡",
-  amazon: "🟠",
-  ontrac: "🔴",
-}
-
-function carrierEmoji(carrier: string | null): string {
-  if (!carrier) return "📦"
-  const key = carrier.toLowerCase()
-  for (const [k, v] of Object.entries(CARRIER_EMOJI)) {
-    if (key.includes(k)) return v
-  }
-  return "📦"
-}
+import { CarrierIcon } from "@/components/CarrierIcon"
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -61,7 +44,7 @@ function ShipmentCard({ shipment, onArchive, onUnarchive, isArchiving = false }:
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-base">{carrierEmoji(shipment.carrier)}</span>
+                <CarrierIcon carrier={shipment.carrier} size={20} />
                 <p className="font-semibold truncate">
                   {shipment.title || `Shipment #${shipment.id}`}
                 </p>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>AU Australia Post</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="AU-Australia-Post" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                <use fill="#D71635" fill-rule="evenodd" xlink:href="#path-1"></use>
+            </g>
+            <g id="Logo" transform="translate(200, 50)" fill="#FFFFFF" fill-rule="nonzero">
+                <g id="g2299" transform="translate(0, 0)">
+                    <path d="M177.854594,10.5932334 C74.9330984,41.570039 -0.0222965407,137.06513 0,250.089213 C0.0223064911,363.090994 75.044606,458.541482 177.988403,489.451383 L177.854594,10.5932334 Z" id="path2309"></path>
+                    <path d="M249.933094,0 C244.090097,0 238.314004,0.223028487 232.560213,0.624455774 L232.582514,26.2711991 C235.950043,26.0481839 239.451381,25.9143748 242.885815,25.9143748 C328.791254,25.8920733 398.46119,95.517406 398.483491,181.422845 C398.505793,266.681541 329.884028,335.950049 244.826047,336.975919 L244.87065,499.933095 C246.610168,499.955397 248.327385,500 250.089204,500 C388.157889,499.955397 500.022293,387.979486 500.022293,249.910801 C499.933087,111.864417 387.979477,-0.0445897035 249.933094,0" id="path2311"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

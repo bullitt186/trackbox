@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>JP Japan Post alt</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="JP-Japan-Post-alt" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                <use fill="#C40F35" fill-rule="evenodd" xlink:href="#path-1"></use>
+            </g>
+            <g id="Logo" transform="translate(50, 92)" fill="#FFFFFF" fill-rule="nonzero">
+                <path d="M679.844242,0 L495.199877,0 L440.084836,265.756416 C420.80631,357.626326 362.549532,381.834963 291.746521,381.834963 C227.213173,381.834963 166.256573,347.773011 181.944543,265.756416 C185.535099,247.831253 186.874653,241.11277 190.01639,225.866715 L273.372538,225.866715 C271.57726,233.938562 268.449333,246.940519 264.416862,265.756416 C258.582208,293.534894 270.679621,311.466961 302.50438,311.466961 C333.880319,311.466961 350.010204,294.895162 355.837953,265.756416 L410.966804,0 L216.911038,0 C112.48799,0 81.1189559,25.9970096 62.2892493,116.969281 L0,416.331924 L376.007213,416.331924 C468.325943,416.331924 518.973504,362.991446 531.968556,298.920729 C544.514789,237.522213 544.963609,237.522213 544.963609,237.522213 L636.384699,237.522213 C729.159154,237.522213 785.178739,198.537056 798.173792,119.199569 C810.706215,45.7174504 757.379547,0 679.844242,0 M712.104011,119.206474 C707.180806,156.403258 678.048964,172.988866 626.510669,172.546952 L558.393671,172.546952 L580.800124,63.2006969 L650.712401,63.2006969 C702.699515,63.1937933 716.599111,89.183898 712.104011,119.206474" id="path25"></path>
+            </g>
+        </g>
+    </g>
+</svg>

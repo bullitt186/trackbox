@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>MC La Poste Monaco alt</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FE0000" offset="0%"></stop>
+            <stop stop-color="#9A0000" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="MC-La-Poste-Monaco-alt" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(49.815, 149.9381)" fill="#FFFFFF" fill-rule="nonzero">
+                <path d="M172.370991,0.00749719037 C169.01225,0.00749719037 160.855307,-0.472322993 159.415846,6.24515957 C158.936026,8.4043504 159.655757,10.8034513 161.335127,12.482822 C163.974138,14.8819229 167.33288,16.5612935 170.691621,17.5209339 C193.243169,25.677877 266.655657,51.3482568 307.440373,79.1778275 C308.879834,80.1374678 311.278935,81.8168385 311.278935,81.8168385 L615.964751,77.0186366 C616.444571,76.2989064 627.720346,56.6262788 634.437828,43.911044 C641.635131,29.9962587 642.114951,18.0007541 633.958008,10.083721 C625.081335,1.44695774 610.446819,0.00749719037 581.177788,0.00749719037 L172.370991,0.00749719037 Z M783.421995,93.812343 C776.704512,94.0522531 330.471742,100.769736 323.514349,101.009646 C319.915698,101.249556 318.716147,101.969286 318.716147,106.047758 C318.476237,138.43562 275.772241,169.623932 217.474089,197.213593 C156.057105,226.482624 78.8060557,255.751655 38.5011603,270.626081 C28.9047566,274.224732 11.8711401,280.222484 6.35320799,283.101405 C2.03482634,285.260596 -1.08400486,288.859248 0.355455694,292.937719 C1.79491624,297.016191 6.1132979,298.935471 21.4675438,295.09691 C28.1850263,293.177629 35.8621493,291.498259 44.4989126,289.099158 C121.510052,268.94671 262.817096,233.679927 400.045668,199.372783 C542.312353,163.86609 682.659757,133.157598 785.581186,114.444611 C793.738129,113.00515 800.455612,108.686769 799.975791,102.449106 C799.735881,96.6912641 793.018399,93.572433 783.421995,93.812343 L783.421995,93.812343 Z M549.989476,183.538717 L79.765696,299.175382 L416.839375,293.417539 C416.839375,293.417539 436.991823,293.89736 451.626338,285.260596 C475.137527,270.865991 506.085929,245.195611 549.989476,183.538717 L549.989476,183.538717 Z" id="path10703"></path>
+            </g>
+        </g>
+    </g>
+</svg>

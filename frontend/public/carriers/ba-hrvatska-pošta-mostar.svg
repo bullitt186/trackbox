@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>BA Hrvatska pošta Mostar</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="BA-Hrvatska-pošta-Mostar" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(197, 50)">
+                <rect id="Rectangle" fill="#FFF100" x="28.2485876" y="132.768362" width="338.983051" height="338.983051"></rect>
+                <path d="M338.983051,104.519774 L56.4971751,104.519774 C25.2946469,104.519774 0,129.814421 0,161.016949 L0,443.502825 C0,474.705353 25.2946469,500 56.4971751,500 L338.983051,500 C370.185579,500 395.480226,474.705353 395.480226,443.502825 L395.480226,161.016949 C395.480226,129.814421 370.185579,104.519774 338.983051,104.519774 Z M338.983051,132.768362 C354.584315,132.768362 367.231638,145.415685 367.231638,161.016949 L367.231638,443.502825 C367.231638,459.104089 354.584315,471.751412 338.983051,471.751412 L56.4971751,471.751412 C40.895911,471.751412 28.2485876,459.104089 28.2485876,443.502825 L28.2485876,161.016949 C28.2485876,145.415685 40.895911,132.768362 56.4971751,132.768362 L338.983051,132.768362 Z" id="Rectangle" fill="#000000" fill-rule="nonzero"></path>
+                <rect id="Rectangle" fill="#FFFFFF" x="138.418079" y="28.2485876" width="338.983051" height="338.983051"></rect>
+                <path d="M449.152542,0 C480.355071,0 505.649718,25.2946469 505.649718,56.4971751 L505.649718,338.983051 C505.649718,370.185579 480.355071,395.480226 449.152542,395.480226 L166.666667,395.480226 C135.464138,395.480226 110.169492,370.185579 110.169492,338.983051 L110.169492,56.4971751 C110.169492,25.2946469 135.464138,0 166.666667,0 Z M476.928949,51.3263636 L316.17849,209.435684 L315.781263,209.849059 C310.432531,215.197791 301.861228,215.359874 296.317189,210.335308 L295.806495,209.849059 L138.669436,52.7123821 C138.503663,53.9503932 138.418079,55.2137896 138.418079,56.4971751 L138.418079,338.983051 C138.418079,354.584315 151.065403,367.231638 166.666667,367.231638 L449.152542,367.231638 C464.753806,367.231638 477.40113,354.584315 477.40113,338.983051 L477.40113,56.4971751 C477.40113,54.7310275 477.239049,53.002736 476.928949,51.3263636 Z M449.152542,28.2485876 L166.666667,28.2485876 C162.957286,28.2485876 159.414893,28.9635478 156.169775,30.2631816 L305.864407,179.957627 L458.497776,29.8310116 C455.572664,28.8059552 452.427693,28.2485876 449.152542,28.2485876 Z" id="Combined-Shape" fill="#000000" fill-rule="nonzero"></path>
+            </g>
+        </g>
+    </g>
+</svg>

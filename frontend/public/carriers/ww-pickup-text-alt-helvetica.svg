@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>WW Pickup text alt</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-4">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="WW-Pickup-text-alt" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <mask id="mask-3" fill="white">
+                <use xlink:href="#path-2"></use>
+            </mask>
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-4)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" mask="url(#mask-3)">
+                <g transform="translate(0, 20)">
+                    <rect id="Rectangle" stroke="#979797" fill="#FF6600" x="0" y="422" width="900" height="158"></rect>
+                    <g id="shopping-basket" stroke="none" fill="none">
+                        <text id="Abholung" font-family="Helvetica-Bold, Helvetica" font-size="100" font-weight="bold" fill="#FFFFFF">
+                            <tspan x="216.748047" y="531.999268">Abholung</tspan>
+                        </text>
+                        <path d="M557.600559,147.279979 L463.971024,6.83567606 C457.900322,-2.27855869 442.813563,-2.27855869 436.742861,6.83567606 L343.113326,147.279979 L254,147.279979 L319.452314,360 L581.261571,360 L646.713885,147.279979 L557.600559,147.279979 Z M450.356942,45.4198152 L518.263718,147.279979 L382.450166,147.279979 L450.356942,45.4198152 Z M384.904628,294.547686 C384.904628,303.547379 377.541243,310.910764 368.54155,310.910764 C359.541857,310.910764 352.178471,303.547379 352.178471,294.547686 L352.178471,212.732293 C352.178471,203.7326 359.541857,196.369215 368.54155,196.369215 C377.541243,196.369215 384.904628,203.7326 384.904628,212.732293 L384.904628,294.547686 Z M466.720021,294.547686 C466.720021,303.547379 459.356636,310.910764 450.356942,310.910764 C441.357249,310.910764 433.993864,303.547379 433.993864,294.547686 L433.993864,212.732293 C433.993864,203.7326 441.357249,196.369215 450.356942,196.369215 C459.356636,196.369215 466.720021,203.7326 466.720021,212.732293 L466.720021,294.547686 Z M548.535414,294.547686 C548.535414,303.547379 541.172028,310.910764 532.172335,310.910764 C523.172642,310.910764 515.809257,303.547379 515.809257,294.547686 L515.809257,212.732293 C515.809257,203.7326 523.172642,196.369215 532.172335,196.369215 C541.172028,196.369215 548.535414,203.7326 548.535414,212.732293 L548.535414,294.547686 Z" id="Shape" fill="#FF6600" fill-rule="nonzero"></path>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>SI Pošta Slovenije</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="SI-Pošta-Slovenije" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(50, 70.9128)" fill="#000000" fill-rule="nonzero">
+                <path d="M143.035343,231.185031 C143.035343,217.047817 143.866944,202.910603 146.361746,188.773389 C118.918919,139.70894 99.7920998,82.3284823 91.4760915,19.95842 L91.4760915,19.95842 C90.6444906,12.4740125 83.991684,5.82120582 75.6756757,5.82120582 L75.6756757,5.82120582 L75.6756757,5.82120582 L15.8004158,5.82120582 L15.8004158,5.82120582 L15.8004158,5.82120582 C6.65280665,5.82120582 0,13.3056133 0,21.6216216 C0,21.6216216 0,22.4532225 0,22.4532225 C16.6320166,170.47817 87.3180873,297.713098 187.110187,371.725572 C158.004158,330.977131 143.035343,282.744283 143.035343,231.185031 M800,23.2848233 C800,22.4532225 800,22.4532225 800,21.6216216 C800,12.4740125 792.515593,5.82120582 784.199584,5.82120582 L755.093555,5.82120582 L710.18711,5.82120582 L608.731809,5.82120582 C599.5842,5.82120582 592.931393,13.3056133 592.931393,21.6216216 L592.931393,76.5072765 C592.931393,85.6548857 600.4158,92.3076923 608.731809,92.3076923 L693.555094,92.3076923 C649.480249,252.806653 530.561331,367.567568 390.852391,367.567568 C315.176715,367.567568 252.806653,306.029106 252.806653,229.52183 C252.806653,153.846154 314.345114,91.4760915 390.852391,91.4760915 C466.528067,91.4760915 528.898129,153.014553 528.898129,229.52183 C528.898129,268.607069 512.266112,303.534304 486.486486,328.482328 C514.760915,316.008316 541.372141,298.544699 566.320166,276.091476 C586.278586,257.796258 604.573805,236.174636 620.37422,212.058212 C611.226611,93.1392931 512.266112,0 391.683992,0 C265.280665,0 162.162162,103.118503 162.162162,229.52183 C162.162162,355.925156 265.280665,459.043659 391.683992,459.043659 C600.4158,460.706861 772.557173,270.27027 800,23.2848233" id="Shape"></path>
+            </g>
+        </g>
+    </g>
+</svg>

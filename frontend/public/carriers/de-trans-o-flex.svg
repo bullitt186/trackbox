@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>DE trans-o-flex</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <radialGradient cx="16.1729384%" cy="22.8149712%" fx="16.1729384%" fy="22.8149712%" r="60.9863021%" gradientTransform="translate(0.1617, 0.2281), scale(0.6542, 1), rotate(180), translate(-0.1617, -0.2281)" id="radialGradient-4">
+            <stop stop-color="#F29000" offset="0%"></stop>
+            <stop stop-color="#EE7C00" offset="100%"></stop>
+        </radialGradient>
+    </defs>
+    <g id="DE-trans-o-flex" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(68, 50)" fill="url(#radialGradient-4)" fill-rule="nonzero">
+                <path d="M246.508202,318.358432 C208.73496,318.358431 178.113697,287.737168 178.113697,249.963925 C178.113697,212.190682 208.73496,181.569419 246.508202,181.569418 C289.344762,181.569418 335.781033,217.566527 336.500975,296.328201 L336.500975,297.33612 L413.750771,297.33612 L413.750771,296.256207 C413.3908,226.205833 395.500237,173.650054 360.583041,140.028754 C332.397305,112.886934 292.908476,98.5600845 246.400211,98.6318087 C164.11082,98.6318087 97.1561972,166.666615 97.1561972,250.071916 C97.1561972,333.477218 164.11082,401.259774 246.400211,401.259774 L764.326616,401.259774 L680.957311,318.466423 L246.508202,318.466423 M0.035997109,250.215905 C0.035997109,388.048835 110.619116,500.107835 246.5442,499.999922 L680.957311,499.999922 L764.326616,417.206493 L246.508202,417.206493 C155.759491,417.206493 81.9654172,342.404501 81.9654172,250.323896 C81.9654172,158.243291 155.759491,83.0813276 246.508202,83.0093334 C281.53339,83.0093334 331.605368,91.0726858 371.166191,129.805575 C408.855164,166.738609 428.185612,222.750111 428.545583,296.292204 L428.545583,297.372118 L509.287098,297.372118 L509.287098,296.22021 C508.207185,92.5125702 372.498084,0 246.508202,0 C110.583119,0 0,112.346977 0,250.215905" id="Shape"></path>
+            </g>
+        </g>
+    </g>
+</svg>

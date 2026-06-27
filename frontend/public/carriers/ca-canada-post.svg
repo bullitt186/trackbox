@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>CA Canada Post</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="CA-Canada-Post" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                <use fill="#004890" fill-rule="evenodd" xlink:href="#path-1"></use>
+            </g>
+            <g id="Logo" transform="translate(0, 50)">
+                <g id="Clipped">
+                    <rect id="Rectangle" fill="#FFFFFF" x="0" y="241" width="900" height="16.5373955"></rect>
+                    <path d="M450.004869,0 C311.183601,0 198.928803,111.778507 198.928803,249.99118 C198.928803,388.230313 311.183601,500 450.004869,500 C588.834956,500 702.298123,388.230313 702.298123,249.99118 C702.298123,111.769687 588.834956,0 450.004869,0" id="Path" fill="#D11C00"></path>
+                </g>
+                <g id="Clipped" transform="translate(294.3017, 118.9758)" fill="#FFFFFF">
+                    <polyline id="Path" points="79.6553062 164.664479 97.7720152 146.653613 304.182543 137.021945 312.623483 128.589825 111.05525 128.589825 0 0 368.173158 122.592083 246.242591 245.228267 0 245.228267 24.1409117 219.958369 230.542619 210.335521 238.992379 201.938682 43.4483489 201.938682 61.5474174 183.883714 266.758397 174.287327 276.407705 164.664479 79.6553062 164.664479"></polyline>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

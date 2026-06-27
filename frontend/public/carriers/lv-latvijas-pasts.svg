@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>LV Latvijas Pasts</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="LV-Latvijas-Pasts" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(76, 50)" fill="#F2C317">
+                <path d="M130.780572,75.9305257 C74.8053754,163.815582 84.1608577,367.450434 95.5370655,380.572314 C127.395582,417.367122 473.365057,445.547257 600.006968,402.734282 C626.357082,391.248053 692.424904,153.895323 663.463617,136.398261 C648.299007,127.189474 455.912004,240.489462 387.266015,246.023536 C327.051329,250.893814 259.747601,164.0833 168.242842,142.841845 C154.992604,139.753912 149.68224,128.164996 154.992604,120.250794 C160.302968,112.395269 178.350137,106.688828 194.086858,113.477146 C263.752378,143.501973 318.407318,204.985572 356.775431,204.244761 C433.221934,202.711797 588.847136,131.403291 673.585581,109.241324 C679.093983,107.836718 688.09373,105.291557 689.047248,110.275524 C718.173568,261.345843 646.736704,420.715438 637.333546,428.633308 C631.110004,433.840986 593.350676,457.414894 339.997175,458.878178 C281.135751,459.255918 116.727178,445.004485 64.7054153,422.134714 C52.665412,416.879361 45.9907834,361.395593 57.1176094,263.197869 C66.3667377,181.05226 103.08453,54.9567887 119.411699,51.868856 C304.306248,17.6742199 750.582191,33.8730303 747.490591,31.437891 C692.934669,-11.3274085 94.0627794,-7.6416932 79.2575728,25.5187423 C-0.324538423,204.024718 -12.2581877,452.474935 9.79375857,462.277838 C134.271916,517.772608 649.963997,510.45252 682.071895,450.736598 C701.178936,415.08968 751.231316,190.154693 748.000356,78.831422 C459.865438,35.1236063 140.895202,59.9884318 130.780572,75.9305257" id="Path"></path>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>HR Hrvatska pošta</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="HR-Hrvatska-pošta" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                <use fill="#232323" fill-rule="evenodd" xlink:href="#path-1"></use>
+            </g>
+            <g id="Logo" transform="translate(109, 49.685)" fill="#FFD400" fill-rule="nonzero">
+                <path d="M677.630236,246.919468 C675.124156,247.070107 673.097745,249.017051 672.847024,251.515103 C654.012835,355.309788 559.862734,428.140765 454.66548,420.292143 C349.468226,412.44352 267.167965,326.447824 263.944516,221.007449 C260.721067,115.567074 337.614544,24.7046184 442.135909,10.4446253 C444.801072,10.2194625 446.825976,7.95127091 446.748597,5.2777331 C446.74634,3.90590653 446.198634,2.59128904 445.226209,1.6236619 C444.253784,0.656034755 442.936473,0.114837804 441.564652,0.119367146 C436.747335,0.0341048989 434.811882,0.0341048989 429.917829,0 L0,0 L212.183628,368.375539 C266.310352,469.026374 381.795269,520.163894 492.700613,492.590398 C603.605956,465.016902 681.697546,365.752025 682.387869,251.472472 C682.236576,248.944205 680.162709,246.959537 677.630236,246.919468 Z" id="Path_279"></path>
+            </g>
+        </g>
+    </g>
+</svg>

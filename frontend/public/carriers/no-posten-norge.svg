@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>NO Posten Norge</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="NO-Posten-Norge" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(200, 50)" fill-rule="nonzero">
+                <path d="M479.297416,259.998522 C474.207442,324.353926 420.401554,375.00168 354.735859,375.00168 C289.070164,375.00168 235.264275,324.353926 230.174302,259.998522 L0,259.998522 C5.25795917,393.429735 115.019957,500 249.744661,500 C384.452567,500 494.231364,393.429735 499.489323,259.998522 L479.297416,259.998522 Z" id="path36" fill="#E32D22"></path>
+                <path d="M230.174302,240.001478 C235.264275,175.646074 289.070164,124.99832 354.735859,124.99832 C420.401554,124.99832 474.207442,175.646074 479.297416,240.001478 L499.489323,240.001478 C494.231364,106.570265 384.452567,0 249.744661,0 C115.019957,0 5.25795917,106.570265 1.90977876e-13,240.001478 L230.174302,240.001478 L230.174302,240.001478 Z" id="path40" fill="#BCBDBF"></path>
+            </g>
+        </g>
+    </g>
+</svg>

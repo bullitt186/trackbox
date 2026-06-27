@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>WW World text</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-4">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="WW-World-text" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <mask id="mask-3" fill="white">
+                <use xlink:href="#path-2"></use>
+            </mask>
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-4)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" mask="url(#mask-3)">
+                <g transform="translate(0, 20)">
+                    <rect id="Rectangle" stroke="#979797" stroke-width="1" fill="#FF6600" fill-rule="evenodd" x="0" y="422" width="900" height="158"></rect>
+                    <path d="M450,0 C350.595,0 270,80.595 270,180 C270,279.405 350.595,360 450,360 C549.405,360 630,279.405 630,180 C630,80.595 549.405,0 450,0 Z M570.75,120 L519.81,120 C515.235,94.275 507.855,71.7 498.435,54.135 C529.98,66.315 555.765,89.97 570.75,120 L570.75,120 Z M450,45 C459.66,45 479.64,70.98 489.39,120 L410.61,120 C420.36,70.98 440.34,45 450,45 L450,45 Z M318.48,210 C316.275,200.34 315,190.32 315,180 C315,169.68 316.275,159.66 318.48,150 L376.305,150 C375.48,159.735 375,169.74 375,180 C375,190.26 375.48,200.265 376.29,210 L318.48,210 Z M329.25,240 L380.19,240 C384.765,265.725 392.145,288.3 401.565,305.865 C370.02,293.685 344.235,270.03 329.25,240 L329.25,240 Z M380.19,120 L329.25,120 C344.235,89.97 370.035,66.315 401.565,54.135 C392.145,71.7 384.765,94.275 380.19,120 Z M450,315 C440.34,315 420.36,289.02 410.61,240 L489.39,240 C479.64,289.02 459.66,315 450,315 L450,315 Z M493.665,210 L406.335,210 C405.48,200.595 405,190.605 405,180 C405,169.395 405.48,159.405 406.335,150 L493.68,150 C494.52,159.405 495,169.395 495,180 C495,190.605 494.52,200.595 493.665,210 L493.665,210 Z M498.435,305.865 C507.855,288.3 515.235,265.725 519.81,240 L570.75,240 C555.765,270.03 529.98,293.685 498.435,305.865 L498.435,305.865 Z M523.71,210 C524.52,200.265 525,190.26 525,180 C525,169.74 524.52,159.735 523.71,150 L581.535,150 C583.725,159.66 585,169.68 585,180 C585,190.32 583.725,200.34 581.52,210 L523.71,210 Z" id="Shape" stroke="none" fill="#FF6600" fill-rule="nonzero"></path>
+                    <text id="Versandzonen" stroke="none" fill="none" font-family="Helvetica-Bold, Helvetica" font-size="100" font-weight="bold">
+                        <tspan x="110.986328" y="531.999268" fill="#FFFFFF">Versandzonen</tspan>
+                    </text>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

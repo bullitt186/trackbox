@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>CA Canada Post alt2</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="CA-Canada-Post-alt2" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" transform="translate(198.9288, 50)">
+                <g id="Clipped" transform="translate(-0, -0)" fill="#D11C00">
+                    <path d="M251.076065,0 C112.254798,0 0,111.778507 0,249.99118 C0,388.230313 112.254798,500 251.076065,500 C389.906153,500 503.36932,388.230313 503.36932,249.99118 C503.36932,111.769687 389.906153,0 251.076065,0" id="Path"></path>
+                </g>
+                <g id="Clipped" transform="translate(95.3729, 118.9758)" fill="#FFFFFF">
+                    <polyline id="Path" points="79.6553062 164.664479 97.7720152 146.653613 304.182543 137.021945 312.623483 128.589825 111.05525 128.589825 0 0 368.173158 122.592083 246.242591 245.228267 0 245.228267 24.1409117 219.958369 230.542619 210.335521 238.992379 201.938682 43.4483489 201.938682 61.5474174 183.883714 266.758397 174.287327 276.407705 164.664479 79.6553062 164.664479"></polyline>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

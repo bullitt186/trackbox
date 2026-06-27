@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="980px" height="680px" viewBox="0 0 980 680" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>WW Pickup alt</title>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#FFFFFF" offset="0%"></stop>
+            <stop stop-color="#EDEDED" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="900" height="600" rx="80"></rect>
+        <filter x="-6.7%" y="-10.0%" width="113.3%" height="120.0%" filterUnits="objectBoundingBox" id="filter-4">
+            <feMorphology radius="2.5" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="17.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="WW-Pickup-alt" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(40, 40)">
+            <mask id="mask-3" fill="white">
+                <use xlink:href="#path-2"></use>
+            </mask>
+            <g id="Rectangle">
+                <use fill="black" fill-opacity="1" filter="url(#filter-4)" xlink:href="#path-2"></use>
+                <use fill="url(#linearGradient-1)" fill-rule="evenodd" xlink:href="#path-2"></use>
+            </g>
+            <g id="Logo" mask="url(#mask-3)" fill="#FF6600" fill-rule="nonzero">
+                <g transform="translate(177, 50)" id="Shape">
+                    <path d="M421.667443,204.555527 L291.626422,9.49399452 C283.194891,-3.16466484 262.24106,-3.16466484 253.809529,9.49399452 L123.768508,204.555527 L2.0185185e-14,204.555527 L90.9059918,500 L454.529959,500 L545.435951,204.555527 L421.667443,204.555527 Z M272.717976,63.0830767 L367.032942,204.555527 L178.403009,204.555527 L272.717976,63.0830767 Z M181.811984,409.094008 C181.811984,421.593582 171.58506,431.820506 159.085486,431.820506 C146.585912,431.820506 136.358988,421.593582 136.358988,409.094008 L136.358988,295.461518 C136.358988,282.961944 146.585912,272.73502 159.085486,272.73502 C171.58506,272.73502 181.811984,282.961944 181.811984,295.461518 L181.811984,409.094008 Z M295.444473,409.094008 C295.444473,421.593582 285.217549,431.820506 272.717976,431.820506 C260.218402,431.820506 249.991478,421.593582 249.991478,409.094008 L249.991478,295.461518 C249.991478,282.961944 260.218402,272.73502 272.717976,272.73502 C285.217549,272.73502 295.444473,282.961944 295.444473,295.461518 L295.444473,409.094008 Z M409.076963,409.094008 C409.076963,421.593582 398.850039,431.820506 386.350465,431.820506 C373.850891,431.820506 363.623967,421.593582 363.623967,409.094008 L363.623967,295.461518 C363.623967,282.961944 373.850891,272.73502 386.350465,272.73502 C398.850039,272.73502 409.076963,282.961944 409.076963,295.461518 L409.076963,409.094008 Z"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

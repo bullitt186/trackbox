@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { StateBadge } from "@/components/StateBadge"
 import { fetchShipment, updateShipment, archiveShipment, deleteShipment, fetchScrapeLog, type Shipment, type ShipmentEvent, type ScrapeLogEntry } from "@/lib/api"
 import { relativeTime, STATE_LABELS, STATES, cn } from "@/lib/utils"
+import { CarrierIcon } from "@/components/CarrierIcon"
 
 // Progress stepper state order
 const STEPPER_STATES = ["preparing", "shipped", "in_transit", "out_for_delivery", "delivered"] as const
@@ -397,7 +398,12 @@ export default function ShipmentDetail() {
 
           {/* Metadata grid */}
           <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-            <MetaRow label="Carrier" value={shipment.carrier} />
+            <MetaRow label="Carrier">
+              <div className="flex items-center gap-1.5">
+                <CarrierIcon carrier={shipment.carrier} size={18} />
+                <span>{shipment.carrier ?? "—"}</span>
+              </div>
+            </MetaRow>
             <MetaRow label="Order Number" value={shipment.order_number} />
             <MetaRow label="First Seen" value={relativeTime(shipment.first_seen_at)} />
             <MetaRow label="Last Updated" value={relativeTime(shipment.last_updated_at)} />
