@@ -73,10 +73,10 @@ class ScraperScheduler:
 
         # Find shipments due for scraping
         conn = db.get_conn()
+        # ponytail: delivered filter disabled for testing
         rows = conn.execute(
             """SELECT * FROM shipments
-               WHERE current_state != 'delivered'
-                 AND scrape_enabled = 1
+               WHERE scrape_enabled = 1
                  AND scrape_fail_count < 3
                  AND (last_scraped_at IS NULL OR last_scraped_at < ?)
             """,
@@ -248,8 +248,9 @@ async def scrape_single(shipment_id: int) -> dict:
     if not shipment:
         return {"error": "Shipment not found"}
 
-    if shipment["current_state"] == "delivered":
-        return {"error": "Shipment already delivered, skipping scrape"}
+    # ponytail: delivered check disabled for testing
+    # if shipment["current_state"] == "delivered":
+    #     return {"error": "Shipment already delivered, skipping scrape"}
 
     carrier = (shipment.get("carrier") or "").lower()
     tracking_number = shipment.get("tracking_number")
