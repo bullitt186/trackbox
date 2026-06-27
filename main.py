@@ -5,7 +5,7 @@ import uuid
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -76,7 +76,8 @@ async def ingest_email(payload: EmailPayload):
         logging.getLogger("trackbox.ingest").exception("Ingest failed [%s]: %s", request_id, e)
         return {"shipment_id": None, "state": None, "action": "error", "parser_status": "error", "error": str(e), "request_id": request_id}
     result["request_id"] = request_id
-    return result
+    status = 201 if result.get("action") == "created" else 200
+    return JSONResponse(content=result, status_code=status)
 
 
 @app.get("/health")
