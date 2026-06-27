@@ -8,5 +8,11 @@ jobs:
   build:
     runs-on: docker-build
     steps:
-      - name: Test
-        run: echo "hello from CI" && whoami && docker --version
+      - name: Checkout and build
+        run: |
+          rm -rf /tmp/trackbox-ci
+          git clone --depth 1 http://git.stahmer.lan/bullitt/trackbox.git /tmp/trackbox-ci
+          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login git.stahmer.lan -u bullitt --password-stdin
+          docker build -t git.stahmer.lan/bullitt/trackbox:latest /tmp/trackbox-ci
+          docker push git.stahmer.lan/bullitt/trackbox:latest
+          rm -rf /tmp/trackbox-ci
