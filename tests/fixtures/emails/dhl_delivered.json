@@ -1,0 +1,14 @@
+{
+  "_comment": "Anonymised DHL tracking email — delivered state. Source: noreply@dhl.de",
+  "from": "noreply@dhl.de",
+  "subject": "Ihre voelkner Sendung wurde zugestellt",
+  "body": "Ihre Sendung mit der Sendungsnummer 00340161386676443882 wurde am 14.02.2024 um 09:32 Uhr zugestellt.\n\nSendungsnummer 00340161386676443882\nAktueller Status: Zugestellt\n\nSendung verfolgen:\nhttps://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=00340161386676443882",
+  "html": "",
+  "message_id": "dhl-fixture-002@test",
+  "expected": {
+    "tracking_number": "00340161386676443882",
+    "carrier": "DHL",
+    "status": "delivered",
+    "action": "created"
+  }
+}

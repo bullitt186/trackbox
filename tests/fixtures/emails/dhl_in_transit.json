@@ -1,0 +1,14 @@
+{
+  "_comment": "Anonymised DHL tracking email — in_transit state. Source: noreply@dhl.de",
+  "from": "noreply@dhl.de",
+  "subject": "Ihre voelkner Sendung ist unterwegs",
+  "body": "Ihre Sendung mit der Sendungsnummer 00340161386676443882 ist auf dem Weg zu Ihnen.\n\nSendungsnummer 00340161386676443882\nAktueller Status: In Zustellung\n\nSendung verfolgen:\nhttps://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html?piececode=00340161386676443882",
+  "html": "",
+  "message_id": "dhl-fixture-001@test",
+  "expected": {
+    "tracking_number": "00340161386676443882",
+    "carrier": "DHL",
+    "status": "in_transit",
+    "action": "created"
+  }
+}
