@@ -101,20 +101,63 @@ function SourceBadge({ source }: { source: string }) {
   )
 }
 
-function EventRow({ event }: { event: ShipmentEvent }) {
+// ── Timeline visualization (item 5) ─────────────────────────────────────────
+
+const STATE_DOT_COLORS: Record<string, string> = {
+  delivered:        "bg-green-500 border-green-500",
+  in_transit:       "bg-blue-500 border-blue-500",
+  shipped:          "bg-blue-400 border-blue-400",
+  out_for_delivery: "bg-sky-500 border-sky-500",
+  delayed:          "bg-amber-500 border-amber-500",
+  exception:        "bg-red-500 border-red-500",
+  preparing:        "bg-slate-400 border-slate-400",
+  unknown:          "bg-violet-400 border-violet-400",
+}
+
+function EventTimeline({ events }: { events: ShipmentEvent[] }) {
+  // Show newest first
+  const sorted = [...events].reverse()
+
   return (
-    <tr className="border-b border-border last:border-0 hover:bg-accent/30 transition-colors">
-      <td className="py-2.5 pr-4">
-        <StateBadge state={event.state} />
-      </td>
-      <td className="py-2.5 pr-4 text-sm text-muted-foreground">
-        {event.occurred_at ? smartDate(event.occurred_at) : "—"}
-      </td>
-      <td className="py-2.5 text-sm">{event.notes ?? "—"}</td>
-      <td className="py-2.5 pl-4">
-        <SourceBadge source={event.source} />
-      </td>
-    </tr>
+    <div className="relative">
+      {sorted.map((event, idx) => {
+        const isLast = idx === sorted.length - 1
+        const dotClass = STATE_DOT_COLORS[event.state] ?? "bg-muted-foreground border-muted-foreground"
+
+        return (
+          <div key={event.id} className="relative flex gap-4 pb-0">
+            {/* Timeline spine */}
+            <div className="flex flex-col items-center">
+              {/* Dot */}
+              <div className={cn(
+                "w-2.5 h-2.5 rounded-full border-2 shrink-0 mt-1",
+                dotClass
+              )} />
+              {/* Connecting line */}
+              {!isLast && (
+                <div className="w-px flex-1 bg-border mt-1 mb-0 min-h-[24px]" />
+              )}
+            </div>
+
+            {/* Content */}
+            <div className={cn("flex-1 min-w-0 pb-4", isLast && "pb-0")}>
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <StateBadge state={event.state} />
+                  <SourceBadge source={event.source} />
+                </div>
+                <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap shrink-0">
+                  {event.occurred_at ? smartDate(event.occurred_at) : "—"}
+                </span>
+              </div>
+              {event.notes && (
+                <p className="text-sm text-muted-foreground mt-1 leading-snug">{event.notes}</p>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -427,7 +470,7 @@ export default function ShipmentDetail() {
         return null
       })()}
 
-      {/* Source & sync card (merged: stall warning + scraper controls + scrape log) */}
+      {/* Source & sync card */}
       {shipment.scrape_enabled !== undefined && (
         <Card className={shipment.stalled ? "border-amber-300 dark:border-amber-700" : undefined}>
           <CardHeader className="pb-2">
@@ -613,30 +656,14 @@ export default function ShipmentDetail() {
         </Card>
       )}
 
-      {/* Event history */}
+      {/* Event history — vertical timeline (item 5) */}
       {shipment.events && shipment.events.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Event History</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-2 pr-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">State</th>
-                    <th className="text-left py-2 pr-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">When</th>
-                    <th className="text-left py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Notes</th>
-                    <th className="text-left py-2 pl-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Source</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...shipment.events].reverse().map(ev => (
-                    <EventRow key={ev.id} event={ev} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <EventTimeline events={shipment.events} />
           </CardContent>
         </Card>
       )}

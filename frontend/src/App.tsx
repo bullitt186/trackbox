@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { Routes, Route, NavLink, useLocation } from "react-router-dom"
-import { LayoutDashboard, Package, Cpu, BarChart2, Settings as SettingsIcon } from "lucide-react"
+import { LayoutDashboard, Cpu, BarChart2, Settings as SettingsIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import Dashboard from "@/pages/Dashboard"
@@ -25,7 +25,7 @@ function NavItem({ to, label, icon: Icon, exact }: { to: string; label: string; 
         cn(
           "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
           isActive
-            ? "bg-primary/10 text-primary"
+            ? "bg-primary text-primary-foreground shadow-sm"
             : "text-muted-foreground hover:text-foreground hover:bg-accent"
         )
       }
@@ -74,15 +74,35 @@ export default function App() {
     <>
       <ThemeApplier />
       <div className="min-h-screen flex bg-background">
-        {/* Sidebar — desktop */}
-        <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-border bg-muted/60">
+        {/* Sidebar — desktop (item 9: branding upgrade) */}
+        <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-border bg-[#F1F5F9] dark:bg-[hsl(222,25%,9%)]">
+          {/* Wordmark */}
           <div className="flex items-center justify-between px-4 py-4 border-b border-border">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              <span className="font-bold text-lg tracking-tight">trackbox</span>
+            <div className="flex items-center gap-2.5">
+              {/* Brand mark: box outline with route nodes */}
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 22 22"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden
+                className="shrink-0"
+              >
+                {/* Box outline */}
+                <rect x="3" y="5" width="16" height="14" rx="1.5" stroke="#2563EB" strokeWidth="1.75" />
+                {/* Route nodes */}
+                <circle cx="8" cy="12" r="1.5" fill="#2563EB" />
+                <circle cx="14" cy="12" r="1.5" fill="#2563EB" />
+                {/* Connection line */}
+                <line x1="9.5" y1="12" x2="12.5" y2="12" stroke="#2563EB" strokeWidth="1.25" strokeLinecap="round" />
+                {/* Top fold line */}
+                <line x1="3" y1="9" x2="19" y2="9" stroke="#2563EB" strokeWidth="1.25" />
+              </svg>
+              <span className="font-bold text-[15px] tracking-tight text-foreground">trackbox</span>
             </div>
           </div>
-          <nav className="flex-1 p-3 space-y-1">
+          <nav className="flex-1 p-3 space-y-0.5">
             {NAV_ITEMS.map(item => (
               <NavItem key={item.to} {...item} />
             ))}
@@ -103,8 +123,14 @@ export default function App() {
           {/* Mobile header */}
           <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card">
             <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
-              <span className="font-bold tracking-tight">Trackbox</span>
+              <svg width="20" height="20" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden className="shrink-0">
+                <rect x="3" y="5" width="16" height="14" rx="1.5" stroke="#2563EB" strokeWidth="1.75" />
+                <circle cx="8" cy="12" r="1.5" fill="#2563EB" />
+                <circle cx="14" cy="12" r="1.5" fill="#2563EB" />
+                <line x1="9.5" y1="12" x2="12.5" y2="12" stroke="#2563EB" strokeWidth="1.25" strokeLinecap="round" />
+                <line x1="3" y1="9" x2="19" y2="9" stroke="#2563EB" strokeWidth="1.25" />
+              </svg>
+              <span className="font-bold tracking-tight text-foreground">trackbox</span>
             </div>
             <ThemeToggle />
           </header>
