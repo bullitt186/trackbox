@@ -82,8 +82,9 @@ async def health():
     conn = db.get_conn()
     conn.execute("SELECT 1").fetchone()
     conn.close()
+    import config as cfg
     uptime = int(time.time() - _START_TIME)
-    return {"status": "ok", "version": os.getenv("TRACKBOX_VERSION", "dev"), "build_time": os.getenv("TRACKBOX_BUILD_TIME", "unknown"), "uptime_seconds": uptime}
+    return {"status": "ok", "version": cfg.TRACKBOX_VERSION, "build_time": cfg.TRACKBOX_BUILD_TIME, "uptime_seconds": uptime}
 
 
 @app.get("/api/stats")

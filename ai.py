@@ -1,7 +1,8 @@
 import json
-import os
 
 from openai import OpenAI
+
+import config
 
 VALID_STATES = [
     "unknown", "preparing", "shipped", "in_transit",
@@ -50,8 +51,8 @@ def extract_and_generate_parser(email: dict) -> tuple[dict | None, dict | None]:
     Call OpenAI to extract shipment fields AND generate a field_map.
     Returns (extracted_fields, field_map) or (None, None) on failure.
     """
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    model = os.getenv("OPENAI_MODEL", "gpt-4o")
+    client = OpenAI(api_key=config.OPENAI_API_KEY)
+    model = config.OPENAI_MODEL
 
     body = email['body']
     html = email.get('html', '')

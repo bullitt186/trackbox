@@ -1,9 +1,10 @@
 import json
-import os
 import sqlite3
 from datetime import datetime, timezone
 
-DB_PATH = os.getenv("DATABASE_PATH", "trackbox.db")
+import config
+
+DB_PATH = config.DATABASE_PATH
 
 
 def get_conn() -> sqlite3.Connection:
