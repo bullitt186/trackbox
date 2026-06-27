@@ -41,18 +41,20 @@ def get_scraper(carrier: str) -> BaseScraper | None:
 
 
 def list_scrapers() -> list[dict]:
-    """List carriers with their scraper options and active selection."""
+    """List carriers with their scraper options.
+
+    Returns static registry data only — no settings DB access to avoid
+    circular import (settings._build_defaults calls list_scrapers).
+    The active_scraper field is populated from settings only at the API layer.
+    """
     _ensure_loaded()
-    result = []
-    for carrier, classes in _SCRAPERS.items():
-        active_key = _settings.get_setting(f"scraper_{carrier}_active", "") or classes[0].key
-        # Use the active scraper's metadata for the card display
-        active_cls = next((c for c in classes if c.key == active_key), classes[0])
-        result.append({
+    return [
+        {
             "carrier": carrier,
-            "name": active_cls.name,
-            "default_interval_minutes": active_cls.default_interval_minutes,
+            "name": classes[0].name,
+            "default_interval_minutes": classes[0].default_interval_minutes,
             "available_scrapers": [{"key": c.key, "name": c.name} for c in classes],
-            "active_scraper": active_key,
-        })
-    return result
+            "active_scraper": classes[0].key,  # default; overridden by settings at API layer
+        }
+        for carrier, classes in _SCRAPERS.items()
+    ]

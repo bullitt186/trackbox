@@ -250,9 +250,15 @@ async def api_list_scrapers():
         carrier = s["carrier"]
         enabled = app_settings.get_setting(f"scraper_{carrier}_enabled", "true")
         s["enabled"] = enabled.lower() == "true"
-        # DHL needs an API key to be configured; others work without
+        # Inject actual active scraper from settings (overrides registry default)
+        s["active_scraper"] = app_settings.get_setting(
+            f"scraper_{carrier}_active", s["available_scrapers"][0]["key"]
+        )
+        # DHL needs an API key only when using the API scraper
         if carrier == "dhl":
-            s["configured"] = bool(app_settings.get_setting("scraper_dhl_api_key", ""))
+            s["configured"] = s["active_scraper"] != "dhl_api" or bool(
+                app_settings.get_setting("scraper_dhl_api_key", "")
+            )
         else:
             s["configured"] = True
     return {

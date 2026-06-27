@@ -16,7 +16,7 @@ def _build_defaults() -> None:
         carrier = s["carrier"]
         _DEFAULTS[f"scraper_{carrier}_enabled"] = "true"
         _DEFAULTS[f"scraper_{carrier}_interval_minutes"] = str(s["default_interval_minutes"])
-        _DEFAULTS[f"scraper_{carrier}_active"] = s["active_scraper"]
+        _DEFAULTS[f"scraper_{carrier}_active"] = s["available_scrapers"][0]["key"]
     # DHL-specific: API key
     _DEFAULTS["scraper_dhl_api_key"] = ""
 
