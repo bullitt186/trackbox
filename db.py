@@ -125,18 +125,26 @@ def init_db() -> None:
         conn.execute("ALTER TABLE _migrations ADD COLUMN applied_at TEXT")
         conn.commit()
 
-    # Seed baseline row for pre-runner databases that already have the message_id column.
-    # On a fresh DB the column doesn't exist yet, so we let _run_migration below add it.
-    cols = {row[1] for row in conn.execute("PRAGMA table_info(events)").fetchall()}
-    if "message_id" in cols:
-        conn.execute(
-            """
-            INSERT OR IGNORE INTO _migrations (name, applied_at)
-            VALUES ('add_message_id', ?)
-            """,
-            (_now(),),
-        )
-        conn.commit()
+    # Seed migration records for columns that already exist in the DB but were
+    # added before the _migrations tracking table was introduced.  This makes
+    # _run_migration() idempotent for pre-tracker production databases.
+    _event_cols = {row[1] for row in conn.execute("PRAGMA table_info(events)").fetchall()}
+    _ship_cols = {row[1] for row in conn.execute("PRAGMA table_info(shipments)").fetchall()}
+    _pre_existing: list[tuple[str, bool]] = [
+        ("add_message_id", "message_id" in _event_cols),
+        ("add_scrape_enabled", "scrape_enabled" in _ship_cols),
+        ("add_scrape_fail_count", "scrape_fail_count" in _ship_cols),
+        ("add_last_scraped_at", "last_scraped_at" in _ship_cols),
+        ("add_archived", "archived" in _ship_cols),
+        ("add_estimated_delivery", "estimated_delivery" in _ship_cols),
+    ]
+    for migration_name, already_present in _pre_existing:
+        if already_present:
+            conn.execute(
+                "INSERT OR IGNORE INTO _migrations (name, applied_at) VALUES (?, ?)",
+                (migration_name, _now()),
+            )
+    conn.commit()
 
     # --- Versioned, append-only migration list ---
     # To add a new migration: append a _run_migration() call below.
