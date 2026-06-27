@@ -61,6 +61,7 @@ class ScraperScheduler:
         from scrapers import list_scrapers
 
         now = datetime.now(timezone.utc)
+        self._disable_retention_expired(now, list_scrapers())
         scrapers_info = list_scrapers()
 
         # Find the shortest enabled interval to use as the cutoff
@@ -85,13 +86,26 @@ class ScraperScheduler:
 
         cutoff = (now - timedelta(minutes=min_interval)).isoformat()
 
-        # Find shipments due for scraping
+        # Build per-carrier retention config for filtering
+        retention_by_carrier: dict[str, int] = {}
+        for s in scrapers_info:
+            carrier = s["carrier"]
+            try:
+                days = int(settings.get_setting(
+                    f"scraper_{carrier}_retention_days",
+                    str(settings.DEFAULT_RETENTION_DAYS),
+                ))
+            except ValueError:
+                days = settings.DEFAULT_RETENTION_DAYS
+            retention_by_carrier[carrier] = days
+
+        # Find shipments due for scraping (excluding delivered)
         conn = db.get_conn()
-        # ponytail: delivered filter disabled for testing
         rows = conn.execute(
             """SELECT * FROM shipments
                WHERE scrape_enabled = 1
                  AND scrape_fail_count < 3
+                 AND current_state != 'delivered'
                  AND (last_scraped_at IS NULL OR last_scraped_at < ?)
             """,
             (cutoff,),
@@ -279,6 +293,50 @@ class ScraperScheduler:
             )
             conn.commit()
             conn.close()
+
+    def _disable_retention_expired(self, now: datetime, scrapers_info: list) -> None:
+        """Disable scraping for delivered shipments whose carrier retention has expired."""
+        if not scrapers_info:
+            return
+        conn = db.get_conn()
+        rows = conn.execute(
+            "SELECT id, carrier, last_updated_at FROM shipments"
+            " WHERE scrape_enabled = 1 AND current_state = 'delivered' AND last_updated_at IS NOT NULL"
+        ).fetchall()
+        conn.close()
+
+        retention_map = {s["carrier"]: s["max_retention_days"] for s in scrapers_info}
+        expired_ids = []
+        for row in rows:
+            carrier = (row["carrier"] or "").lower()
+            max_days = retention_map.get(carrier, settings.DEFAULT_RETENTION_DAYS)
+            configured = settings.DEFAULT_RETENTION_DAYS
+            try:
+                configured = int(settings.get_setting(
+                    f"scraper_{carrier}_retention_days",
+                    str(settings.DEFAULT_RETENTION_DAYS),
+                ))
+            except ValueError:
+                pass
+            effective_days = min(configured, max_days)
+            try:
+                last_updated = datetime.fromisoformat(row["last_updated_at"].replace("Z", "+00:00"))
+                if last_updated.tzinfo is None:
+                    last_updated = last_updated.replace(tzinfo=timezone.utc)
+            except (ValueError, AttributeError):
+                continue
+            if (now - last_updated).days > effective_days:
+                expired_ids.append(row["id"])
+
+        if expired_ids:
+            conn = db.get_conn()
+            conn.execute(
+                f"UPDATE shipments SET scrape_enabled = 0 WHERE id IN ({','.join('?' * len(expired_ids))})",
+                expired_ids,
+            )
+            conn.commit()
+            conn.close()
+            log.info("Retention expired: disabled scraping for %d shipment(s)", len(expired_ids))
 
 
 _last_manual_scrape: float = 0

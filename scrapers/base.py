@@ -24,6 +24,7 @@ class BaseScraper(ABC):
     carrier: str = ""
     default_interval_minutes: int = 60
     min_request_spacing: float = 5.0
+    max_retention_days: int = 90
 
     @abstractmethod
     async def scrape(self, tracking_number: str) -> ScraperResult | None:

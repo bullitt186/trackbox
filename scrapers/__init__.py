@@ -53,6 +53,7 @@ def list_scrapers() -> list[dict]:
             "carrier": carrier,
             "name": classes[0].name,
             "default_interval_minutes": classes[0].default_interval_minutes,
+            "max_retention_days": classes[0].max_retention_days,
             "available_scrapers": [{"key": c.key, "name": c.name} for c in classes],
             "active_scraper": classes[0].key,  # default; overridden by settings at API layer
         }

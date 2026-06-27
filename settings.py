@@ -3,6 +3,7 @@
 import db
 
 MIN_INTERVAL_MINUTES = 10
+DEFAULT_RETENTION_DAYS = 30
 
 _DEFAULTS: dict[str, str] = {}
 
@@ -17,6 +18,7 @@ def _build_defaults() -> None:
         _DEFAULTS[f"scraper_{carrier}_enabled"] = "true"
         _DEFAULTS[f"scraper_{carrier}_interval_minutes"] = str(s["default_interval_minutes"])
         _DEFAULTS[f"scraper_{carrier}_active"] = s["available_scrapers"][0]["key"]
+        _DEFAULTS[f"scraper_{carrier}_retention_days"] = str(DEFAULT_RETENTION_DAYS)
     # DHL-specific: API key
     _DEFAULTS["scraper_dhl_api_key"] = ""
 
@@ -54,6 +56,8 @@ def set_setting(key: str, value: str) -> None:
     """Set a single setting value (upsert). Enforces minimums."""
     if key.endswith("_interval_minutes"):
         value = str(max(int(value), MIN_INTERVAL_MINUTES))
+    elif key.endswith("_retention_days"):
+        value = str(max(int(value), 1))
     conn = db.get_conn()
     conn.execute(
         "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",

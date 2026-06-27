@@ -27,6 +27,7 @@ class HermesScraper(BaseScraper):
     key = "hermes"
     carrier = "hermes"
     default_interval_minutes = 60
+    max_retention_days = 30
     min_request_spacing = 3.0
 
     async def scrape(self, tracking_number: str) -> ScraperResult | None:

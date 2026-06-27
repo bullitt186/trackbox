@@ -403,6 +403,28 @@ export default function ShipmentDetail() {
         </CardContent>
       </Card>
 
+      {/* Tracking retention note (delivered only) */}
+      {isDelivered && (shipment as any).tracking_expires_at && (() => {
+        const expiresAt = new Date((shipment as any).tracking_expires_at)
+        const now = new Date()
+        const diffDays = Math.round((expiresAt.getTime() - now.getTime()) / 86400000)
+        if (diffDays < 0) {
+          return (
+            <p className="text-xs text-muted-foreground">
+              Tracking data may no longer be available from carrier (expired {Math.abs(diffDays)} day{Math.abs(diffDays) !== 1 ? "s" : ""} ago).
+            </p>
+          )
+        }
+        if (diffDays <= 7) {
+          return (
+            <p className="text-xs text-amber-600">
+              Tracking data expires in {diffDays} day{diffDays !== 1 ? "s" : ""}.
+            </p>
+          )
+        }
+        return null
+      })()}
+
       {/* Scraper status */}
       {!isDelivered && shipment.scrape_enabled !== undefined && (
         <Card>

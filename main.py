@@ -150,11 +150,35 @@ async def api_shipments(state: str | None = None):
 @app.get("/api/shipments/{shipment_id}")
 async def api_shipment_detail(shipment_id: int):
     """JSON detail of a single shipment with events."""
+    from datetime import datetime, timedelta, timezone  # noqa: PLC0415
+
+    from scrapers import list_scrapers as _list_scrapers
     shipment = db.get_shipment(shipment_id)
     if not shipment:
         raise HTTPException(404)
     events = db.get_events(shipment_id)
-    return {**shipment, "events": events}
+    # Compute tracking_expires_at for delivered shipments
+    tracking_expires_at = None
+    if shipment.get("current_state") == "delivered" and shipment.get("last_updated_at"):
+        carrier = (shipment.get("carrier") or "").lower()
+        scrapers = {s["carrier"]: s for s in _list_scrapers()}
+        max_ret = scrapers.get(carrier, {}).get("max_retention_days", app_settings.DEFAULT_RETENTION_DAYS)
+        try:
+            configured_ret = int(app_settings.get_setting(
+                f"scraper_{carrier}_retention_days",
+                str(app_settings.DEFAULT_RETENTION_DAYS),
+            ))
+        except ValueError:
+            configured_ret = app_settings.DEFAULT_RETENTION_DAYS
+        effective_ret = min(configured_ret, max_ret)
+        try:
+            last_updated = datetime.fromisoformat(shipment["last_updated_at"].replace("Z", "+00:00"))
+            if last_updated.tzinfo is None:
+                last_updated = last_updated.replace(tzinfo=timezone.utc)
+            tracking_expires_at = (last_updated + timedelta(days=effective_ret)).isoformat()
+        except (ValueError, AttributeError):
+            pass
+    return {**shipment, "events": events, "tracking_expires_at": tracking_expires_at}
 
 
 @app.put("/api/shipments/{shipment_id}")
@@ -222,8 +246,18 @@ async def api_get_settings():
 @app.put("/api/settings")
 async def api_update_settings(request: Request):
     """Update settings (JSON body with key-value pairs)."""
+    from scrapers import list_scrapers as _list_scrapers
     body = await request.json()
+    scraper_max = {s["carrier"]: s["max_retention_days"] for s in _list_scrapers()}
     for key, value in body.items():
+        # Cap retention_days at the carrier's documented maximum
+        if key.endswith("_retention_days"):
+            carrier = key.replace("scraper_", "").replace("_retention_days", "")
+            max_ret = scraper_max.get(carrier, 90)
+            try:
+                value = str(min(int(value), max_ret))
+            except ValueError:
+                pass
         app_settings.set_setting(key, str(value))
     return app_settings.get_all_settings()
 
@@ -261,6 +295,15 @@ async def api_list_scrapers():
             )
         else:
             s["configured"] = True
+        # Inject user-configured retention days (capped at max)
+        try:
+            configured_ret = int(app_settings.get_setting(
+                f"scraper_{carrier}_retention_days",
+                str(app_settings.DEFAULT_RETENTION_DAYS),
+            ))
+        except ValueError:
+            configured_ret = app_settings.DEFAULT_RETENTION_DAYS
+        s["retention_days"] = min(configured_ret, s["max_retention_days"])
     return {
         "scrapers": scrapers,
         "scheduler_running": scheduler.running,

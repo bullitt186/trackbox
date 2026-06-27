@@ -17,6 +17,8 @@ interface ScraperInfo {
   enabled: boolean
   configured: boolean
   default_interval_minutes: number
+  max_retention_days: number
+  retention_days: number
   available_scrapers: ScraperOption[]
   active_scraper: string
 }
@@ -30,6 +32,7 @@ interface ScrapersResponse {
 interface ScraperForm {
   enabled: boolean
   interval: string
+  retentionDays: string
   apiKey?: string
   activeKey: string
 }
@@ -62,6 +65,7 @@ export default function Settings() {
         forms[c] = {
           enabled: settingsData[`scraper_${c}_enabled`] === "true",
           interval: settingsData[`scraper_${c}_interval_minutes`] || String(s.default_interval_minutes),
+          retentionDays: settingsData[`scraper_${c}_retention_days`] || String(s.retention_days),
           activeKey: settingsData[`scraper_${c}_active`] || s.active_scraper,
           ...(c === "dhl" ? { apiKey: settingsData.scraper_dhl_api_key || "" } : {}),
         }
@@ -82,6 +86,7 @@ export default function Settings() {
     for (const [carrier, form] of Object.entries(scraperForms)) {
       payload[`scraper_${carrier}_enabled`] = form.enabled ? "true" : "false"
       payload[`scraper_${carrier}_interval_minutes`] = form.interval
+      payload[`scraper_${carrier}_retention_days`] = form.retentionDays
       payload[`scraper_${carrier}_active`] = form.activeKey
       if (form.apiKey !== undefined) {
         payload[`scraper_${carrier}_api_key`] = form.apiKey
@@ -217,6 +222,24 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground">
                   Minimum 10 min, default {s.default_interval_minutes} min.
                   {s.carrier === "dhl" && form.activeKey === "dhl_api" && " DHL API allows 250 calls/day."}
+                </p>
+              </div>
+
+              {/* Retention period */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Retention Period (days after delivery)</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max={s.max_retention_days}
+                  value={form.retentionDays}
+                  onChange={e => updateForm(s.carrier, "retentionDays", e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {s.carrier === "dhl" && "DHL keeps tracking data for up to 90 days after delivery."}
+                  {s.carrier === "hermes" && "Hermes keeps tracking data for up to 30 days after delivery."}
+                  {(s.carrier === "dpd" || s.carrier === "gls") && `Retention period not publicly documented for ${s.carrier.toUpperCase()}; max set to 90 days.`}
+                  {" "}Scraping stops after this many days.
                 </p>
               </div>
             </CardContent>
