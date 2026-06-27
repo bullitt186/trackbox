@@ -14,6 +14,10 @@ COPY requirements.lock ./
 RUN pip install --no-cache-dir -r requirements.lock
 ARG VERSION=dev
 ENV TRACKBOX_VERSION=${VERSION}
+LABEL org.opencontainers.image.source="https://git.stahmer.net/bullitt/trackbox" \
+      org.opencontainers.image.title="Trackbox" \
+      org.opencontainers.image.description="AI-powered parcel tracking" \
+      org.opencontainers.image.version="${VERSION}"
 COPY . .
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
