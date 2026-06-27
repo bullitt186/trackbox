@@ -20,3 +20,21 @@ jobs:
           docker push git.stahmer.net/bullitt/trackbox:latest
           docker tag git.stahmer.net/bullitt/trackbox:latest git.stahmer.lan/bullitt/trackbox:latest
           rm -rf /tmp/trackbox-ci
+
+      - name: Deploy to production
+        env:
+          KOMODO_KEY: ${{ secrets.KOMODO_KEY }}
+          KOMODO_SECRET: ${{ secrets.KOMODO_SECRET }}
+        run: |
+          apk add --no-cache curl > /dev/null 2>&1 || true
+          # Pull new image and recreate trackbox container
+          docker pull git.stahmer.net/bullitt/trackbox:latest
+          docker stop trackbox 2>/dev/null || true
+          docker rm trackbox 2>/dev/null || true
+          # Trigger Komodo to redeploy n8n stack (recreates trackbox)
+          curl -sf -X POST "http://192.168.0.2:9120/execute" \
+            -H "Content-Type: application/json" \
+            -H "X-Api-Key: ${KOMODO_KEY}" \
+            -H "X-Api-Secret: ${KOMODO_SECRET}" \
+            -d '{"type":"DeployStack","params":{"stack":"n8n"}}'
+          echo "Deploy triggered"
