@@ -34,17 +34,26 @@
 
 ## API Endpoints
 
+Interactive API docs are available at `GET /docs` (Swagger UI) and `GET /redoc` when the app is running. For full request/response documentation see [docs/api.md](docs/api.md) and [docs/api-ingest.md](docs/api-ingest.md).
+
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/ingest` | Process incoming email |
-| GET | `/health` | Health check (DB connectivity) |
-| GET | `/api/shipments` | List all shipments (optional `?state=active\|delivered`), sorted by urgency, includes `last_event` |
-| GET | `/api/shipments/{id}` | Single shipment with full event history |
-| PUT | `/api/shipments/{id}` | Update shipment fields (title, state, carrier, etc) |
+| POST | `/ingest` | Process incoming email — see [docs/api-ingest.md](docs/api-ingest.md) |
+| GET | `/health` | Health check (DB connectivity, version, uptime) |
+| GET | `/api/shipments` | List all shipments (`?state=active\|delivered\|archived`), sorted by urgency, includes `last_event`, `stalled`, `stall_reason` |
+| GET | `/api/shipments/{id}` | Single shipment with full event history and `tracking_expires_at` |
+| PUT | `/api/shipments/{id}` | Update shipment fields (title, state, carrier, etc); state transitions respect state machine |
 | DELETE | `/api/shipments/{id}` | Delete shipment and events |
-| GET | `/api/stats` | System statistics (by state, by carrier, parser count, events, AI savings %) |
+| GET | `/api/stats` | System statistics (by state, parser count, events) |
 | GET | `/api/parsers` | List all parsers with use counts |
-| DELETE | `/api/parsers/{id}` | Delete a parser |
+| DELETE | `/api/parsers/{id}` | Delete a parser (forces AI re-extraction on next matching email) |
+| GET | `/api/settings` | Get all settings as key-value pairs |
+| PUT | `/api/settings` | Update settings (enforces min interval, max retention) |
+| GET | `/api/scrape-log` | Query scrape attempt history (`?shipment_id`, `?carrier`, `?status`, `?limit`) |
+| GET | `/api/scrapers` | List scrapers with status, enabled state, and scheduler info |
+| GET | `/api/imap/status` | IMAP poller health (enabled, last poll, last error, emails processed) |
+| POST | `/api/shipments/{id}/scrape` | Trigger immediate scrape (6-second cooldown) |
+| PUT | `/api/shipments/{id}/scrape` | Enable/disable scraping; re-enabling resets `scrape_fail_count` to 0 |
 
 ## Web UI (Jinja2 Server-Rendered)
 

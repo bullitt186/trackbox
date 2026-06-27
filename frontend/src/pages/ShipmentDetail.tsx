@@ -186,6 +186,31 @@ function DeleteDialog({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
   )
 }
 
+/** Derive a short actionable hint from a raw scraper error message. */
+function scrapeErrorHint(message: string | null): string | null {
+  if (!message) return null
+  const m = message.toLowerCase()
+  if (m.includes("403") || m.includes("rate") || m.includes("blocked") || m.includes("forbidden")) {
+    return "The carrier's tracking endpoint returned an access error (403). This usually means the endpoint is temporarily blocking automated requests. Try re-enabling scraping in 24 hours."
+  }
+  if (m.includes("429") || m.includes("too many requests")) {
+    return "The carrier's tracking endpoint returned a rate-limit error (429). Wait a few hours before re-enabling scraping."
+  }
+  if (m.includes("timed out") || m.includes("timeout") || m.includes("timeoutexception") || m.includes("read timed out")) {
+    return "The carrier's tracking endpoint did not respond in time. This may be a temporary outage. Try re-enabling scraping in a few hours."
+  }
+  if (m.includes("api key not configured") || m.includes("api key")) {
+    return "The carrier API key is not configured. Add the required API key in your environment settings and re-enable scraping."
+  }
+  if (/5\d\d/.test(m) || m.includes("server error") || m.includes("bad gateway") || m.includes("service unavailable")) {
+    return "The carrier's tracking endpoint returned a server error. This is likely a temporary outage on the carrier's side. Try re-enabling scraping later."
+  }
+  if (m.includes("not found") || m.includes("404")) {
+    return "The tracking number was not found at the carrier. The shipment may have been removed from the carrier's system."
+  }
+  return null
+}
+
 export default function ShipmentDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -201,6 +226,7 @@ export default function ShipmentDetail() {
   const [scrapeResult, setScrapeResult] = useState<string | null>(null)
   const [scrapeLog, setScrapeLog] = useState<ScrapeLogEntry[]>([])
   const [scrapeLogOpen, setScrapeLogOpen] = useState(false)
+  const [lastScrapeError, setLastScrapeError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -211,6 +237,17 @@ export default function ShipmentDetail() {
   }, [id])
 
   useEffect(() => { load() }, [load])
+
+  // When shipment is stalled due to scrape failures, fetch the last error message for actionable hints
+  useEffect(() => {
+    if (shipment?.stalled && shipment?.stall_reason === "scrape_failures" && id) {
+      fetchScrapeLog({ shipment_id: Number(id), status: "error", limit: 1 }).then(entries => {
+        setLastScrapeError(entries[0]?.message ?? null)
+      })
+    } else {
+      setLastScrapeError(null)
+    }
+  }, [shipment?.stalled, shipment?.stall_reason, id])
 
   // Load scrape log when section is opened
   useEffect(() => {
@@ -510,10 +547,22 @@ export default function ShipmentDetail() {
                 <div className="space-y-1">
                   <p className="font-medium">No further updates expected</p>
                   {shipment.stall_reason === "scrape_failures" && (
-                    <p className="text-muted-foreground text-xs">
-                      Scraping was disabled after {shipment.scrape_fail_count} consecutive failures.
-                      {shipment.last_scraped_at ? ` Last attempt: ${smartDate(shipment.last_scraped_at as string)}.` : ""}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-xs">
+                        Scraping was disabled after {shipment.scrape_fail_count} consecutive failures.
+                        {shipment.last_scraped_at ? ` Last attempt: ${smartDate(shipment.last_scraped_at as string)}.` : ""}
+                      </p>
+                      {scrapeErrorHint(lastScrapeError) && (
+                        <p className="text-muted-foreground text-xs italic">
+                          {scrapeErrorHint(lastScrapeError)}
+                        </p>
+                      )}
+                      {lastScrapeError && !scrapeErrorHint(lastScrapeError) && (
+                        <p className="text-muted-foreground text-xs">
+                          Last error: <span className="font-mono">{lastScrapeError}</span>
+                        </p>
+                      )}
+                    </div>
                   )}
                   {shipment.stall_reason === "retention_expired" && (
                     <p className="text-muted-foreground text-xs">
