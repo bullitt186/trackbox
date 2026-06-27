@@ -185,92 +185,89 @@ async def api_parsers():
     return [dict(r) for r in rows]
 
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    shipments = db.list_shipments()
-    return templates.TemplateResponse(request, "index.html", {"shipments": shipments})
+if not _HAS_FRONTEND:
+    @app.get("/", response_class=HTMLResponse)
+    async def index(request: Request):
+        shipments = db.list_shipments()
+        return templates.TemplateResponse(request, "index.html", {"shipments": shipments})
 
 
-@app.get("/stats", response_class=HTMLResponse)
-async def stats_page(request: Request):
-    conn = db.get_conn()
-    by_state = {}
-    for row in conn.execute("SELECT current_state, COUNT(*) as cnt FROM shipments GROUP BY current_state").fetchall():
-        by_state[row["current_state"]] = row["cnt"]
-    by_carrier = {}
-    for row in conn.execute("SELECT carrier, COUNT(*) as cnt FROM shipments WHERE carrier IS NOT NULL GROUP BY carrier ORDER BY cnt DESC").fetchall():
-        by_carrier[row["carrier"]] = row["cnt"]
-    total_shipments = conn.execute("SELECT COUNT(*) FROM shipments").fetchone()[0]
-    total_parsers = conn.execute("SELECT COUNT(*) FROM parsers").fetchone()[0]
-    total_events = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
-    total_uses = conn.execute("SELECT COALESCE(SUM(use_count), 0) FROM parsers").fetchone()[0]
-    recent_events = [dict(r) for r in conn.execute("SELECT * FROM events ORDER BY occurred_at DESC LIMIT 10").fetchall()]
-    conn.close()
-    ai_calls_saved = int(total_uses / max(total_uses + total_parsers, 1) * 100)
-    stats = {
-        "total_shipments": total_shipments,
-        "active": sum(v for k, v in by_state.items() if k != "delivered"),
-        "delivered": by_state.get("delivered", 0),
-        "total_parsers": total_parsers,
-        "total_events": total_events,
-        "ai_calls_saved": ai_calls_saved,
-        "by_state": by_state,
-        "by_carrier": by_carrier,
-        "recent_events": recent_events,
-    }
-    state_labels = {s: s.replace("_", " ").title() for s in VALID_STATES}
-    return templates.TemplateResponse(request, "stats.html", {"stats": stats, "state_labels": state_labels})
+if not _HAS_FRONTEND:
+    @app.get("/stats", response_class=HTMLResponse)
+    async def stats_page(request: Request):
+        conn = db.get_conn()
+        by_state = {}
+        for row in conn.execute("SELECT current_state, COUNT(*) as cnt FROM shipments GROUP BY current_state").fetchall():
+            by_state[row["current_state"]] = row["cnt"]
+        by_carrier = {}
+        for row in conn.execute("SELECT carrier, COUNT(*) as cnt FROM shipments WHERE carrier IS NOT NULL GROUP BY carrier ORDER BY cnt DESC").fetchall():
+            by_carrier[row["carrier"]] = row["cnt"]
+        total_shipments = conn.execute("SELECT COUNT(*) FROM shipments").fetchone()[0]
+        total_parsers = conn.execute("SELECT COUNT(*) FROM parsers").fetchone()[0]
+        total_events = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+        total_uses = conn.execute("SELECT COALESCE(SUM(use_count), 0) FROM parsers").fetchone()[0]
+        recent_events = [dict(r) for r in conn.execute("SELECT * FROM events ORDER BY occurred_at DESC LIMIT 10").fetchall()]
+        conn.close()
+        ai_calls_saved = int(total_uses / max(total_uses + total_parsers, 1) * 100)
+        stats = {
+            "total_shipments": total_shipments,
+            "active": sum(v for k, v in by_state.items() if k != "delivered"),
+            "delivered": by_state.get("delivered", 0),
+            "total_parsers": total_parsers,
+            "total_events": total_events,
+            "ai_calls_saved": ai_calls_saved,
+            "by_state": by_state,
+            "by_carrier": by_carrier,
+            "recent_events": recent_events,
+        }
+        state_labels = {s: s.replace("_", " ").title() for s in VALID_STATES}
+        return templates.TemplateResponse(request, "stats.html", {"stats": stats, "state_labels": state_labels})
 
+    @app.get("/parsers", response_class=HTMLResponse)
+    async def parsers_page(request: Request):
+        import json as json_mod
+        conn = db.get_conn()
+        rows = conn.execute("SELECT * FROM parsers ORDER BY use_count DESC").fetchall()
+        conn.close()
+        parsers = []
+        for r in rows:
+            p = dict(r)
+            p["keywords"] = json_mod.loads(p["subject_keywords"]) if p["subject_keywords"] else []
+            p["field_map"] = json_mod.loads(p["field_map"]) if p["field_map"] else {}
+            parsers.append(p)
+        return templates.TemplateResponse(request, "parsers.html", {"parsers": parsers})
 
-@app.get("/parsers", response_class=HTMLResponse)
-async def parsers_page(request: Request):
-    import json as json_mod
-    conn = db.get_conn()
-    rows = conn.execute("SELECT * FROM parsers ORDER BY use_count DESC").fetchall()
-    conn.close()
-    parsers = []
-    for r in rows:
-        p = dict(r)
-        p["keywords"] = json_mod.loads(p["subject_keywords"]) if p["subject_keywords"] else []
-        p["field_map"] = json_mod.loads(p["field_map"]) if p["field_map"] else {}
-        parsers.append(p)
-    return templates.TemplateResponse(request, "parsers.html", {"parsers": parsers})
+    @app.get("/shipments/{shipment_id}", response_class=HTMLResponse)
+    async def detail(request: Request, shipment_id: int, updated: str | None = None):
+        shipment = db.get_shipment(shipment_id)
+        if not shipment:
+            raise HTTPException(404)
+        events = db.get_events(shipment_id)
+        return templates.TemplateResponse(request, "detail.html", {
+            "shipment": shipment, "events": events, "states": VALID_STATES, "flash": updated
+        })
 
+    @app.post("/shipments/{shipment_id}/state")
+    async def update_state(shipment_id: int, state: str = Form(...), notes: str = Form("")):
+        shipment = db.get_shipment(shipment_id)
+        if not shipment:
+            raise HTTPException(404)
+        db.update_shipment(shipment_id, {"current_state": state})
+        db.add_event(shipment_id, state, notes or "Manual update", "manual")
+        return RedirectResponse(f"/shipments/{shipment_id}?updated=State+updated", status_code=303)
 
-@app.get("/shipments/{shipment_id}", response_class=HTMLResponse)
-async def detail(request: Request, shipment_id: int, updated: str | None = None):
-    shipment = db.get_shipment(shipment_id)
-    if not shipment:
-        raise HTTPException(404)
-    events = db.get_events(shipment_id)
-    return templates.TemplateResponse(request, "detail.html", {
-        "shipment": shipment, "events": events, "states": VALID_STATES, "flash": updated
-    })
+    @app.post("/shipments/{shipment_id}/title")
+    async def update_title(shipment_id: int, title: str = Form(...)):
+        shipment = db.get_shipment(shipment_id)
+        if not shipment:
+            raise HTTPException(404)
+        db.update_shipment(shipment_id, {"title": title})
+        return RedirectResponse(f"/shipments/{shipment_id}", status_code=303)
 
-
-@app.post("/shipments/{shipment_id}/state")
-async def update_state(shipment_id: int, state: str = Form(...), notes: str = Form("")):
-    shipment = db.get_shipment(shipment_id)
-    if not shipment:
-        raise HTTPException(404)
-    db.update_shipment(shipment_id, {"current_state": state})
-    db.add_event(shipment_id, state, notes or "Manual update", "manual")
-    return RedirectResponse(f"/shipments/{shipment_id}?updated=State+updated", status_code=303)
-
-
-@app.post("/shipments/{shipment_id}/title")
-async def update_title(shipment_id: int, title: str = Form(...)):
-    shipment = db.get_shipment(shipment_id)
-    if not shipment:
-        raise HTTPException(404)
-    db.update_shipment(shipment_id, {"title": title})
-    return RedirectResponse(f"/shipments/{shipment_id}", status_code=303)
-
-
-@app.post("/shipments/{shipment_id}/delete")
-async def delete_shipment(shipment_id: int):
-    db.delete_shipment(shipment_id)
-    return RedirectResponse("/", status_code=303)
+    @app.post("/shipments/{shipment_id}/delete")
+    async def delete_shipment(shipment_id: int):
+        db.delete_shipment(shipment_id)
+        return RedirectResponse("/", status_code=303)
 
 
 @app.on_event("startup")
