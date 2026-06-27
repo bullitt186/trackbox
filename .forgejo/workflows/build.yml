@@ -49,9 +49,17 @@ jobs:
           sleep 25
           for i in 1 2 3 4 5; do
             if curl -sf http://192.168.0.50:8900/health > /dev/null 2>&1; then
-              echo "Health check passed"
+              echo "Health check passed:"
               curl -s http://192.168.0.50:8900/health
-              exit 0
+              echo ""
+              # Smoke test: ingest a test email
+              RESULT=$(curl -sf -X POST http://192.168.0.50:8900/ingest \
+                -H "Content-Type: application/json" \
+                -d '{"from":"ci@test.local","subject":"CI smoke test","body":"test","message_id":"ci-smoke-'$i'-'$$'@test"}')
+              echo "Smoke test: ${RESULT}"
+              echo "${RESULT}" | grep -q '"shipment_id"' && echo "Ingest OK" && exit 0
+              echo "Ingest returned unexpected response"
+              exit 1
             fi
             sleep 10
           done
