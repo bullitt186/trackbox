@@ -99,6 +99,32 @@ async def api_shipment_detail(shipment_id: int):
     return {**shipment, "events": events}
 
 
+@app.put("/api/shipments/{shipment_id}")
+async def api_update_shipment(shipment_id: int, request: Request):
+    """Update shipment fields (title, state, carrier, etc)."""
+    shipment = db.get_shipment(shipment_id)
+    if not shipment:
+        raise HTTPException(404)
+    body = await request.json()
+    allowed = {"title", "carrier", "tracking_number", "order_number", "tracking_link", "current_state"}
+    updates = {k: v for k, v in body.items() if k in allowed and v is not None}
+    if "current_state" in updates:
+        db.add_event(shipment_id, updates["current_state"], body.get("notes", "API update"), "manual")
+    if updates:
+        db.update_shipment(shipment_id, updates)
+    return db.get_shipment(shipment_id)
+
+
+@app.delete("/api/shipments/{shipment_id}")
+async def api_delete_shipment(shipment_id: int):
+    """Delete a shipment and all its events."""
+    shipment = db.get_shipment(shipment_id)
+    if not shipment:
+        raise HTTPException(404)
+    db.delete_shipment(shipment_id)
+    return {"deleted": shipment_id}
+
+
 @app.delete("/api/parsers/{parser_id}")
 async def delete_parser(parser_id: int):
     """Delete a stored parser."""
