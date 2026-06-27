@@ -29,7 +29,7 @@ export default function Settings() {
   // Form state
   const [dhlEnabled, setDhlEnabled] = useState(true)
   const [dhlApiKey, setDhlApiKey] = useState("")
-  const [dhlInterval, setDhlInterval] = useState("60")
+  const [dhlInterval, setDhlInterval] = useState("120")
 
   useEffect(() => {
     Promise.all([
@@ -135,13 +135,13 @@ export default function Settings() {
             <label className="text-sm font-medium">Check Interval (minutes)</label>
             <Input
               type="number"
-              min="5"
+              min="10"
               max="1440"
               value={dhlInterval}
               onChange={e => setDhlInterval(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              How often to check for status updates (minimum 5 minutes)
+              How often to check for status updates. Minimum 10 min, default 120 min. DHL allows 250 calls/day (10 packages × 24 checks = 240/day at 60min)
             </p>
           </div>
 

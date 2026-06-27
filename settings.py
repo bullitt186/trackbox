@@ -2,9 +2,15 @@
 
 import db
 
+# DHL API limits: 250 calls/day, min 5s between requests.
+# With 10 active packages at 120min interval: 10 × 12 = 120 calls/day (48% utilization).
+# Minimum 10min enforced to prevent exceeding daily quota even with 25 packages.
+DHL_MIN_INTERVAL_MINUTES = 10
+DHL_DEFAULT_INTERVAL_MINUTES = 120
+
 _DEFAULTS: dict[str, str] = {
     "scraper_dhl_enabled": "true",
-    "scraper_dhl_interval_minutes": "60",
+    "scraper_dhl_interval_minutes": str(DHL_DEFAULT_INTERVAL_MINUTES),
     "scraper_dhl_api_key": "",
 }
 
@@ -32,7 +38,9 @@ def get_setting(key: str, default: str = "") -> str:
 
 
 def set_setting(key: str, value: str) -> None:
-    """Set a single setting value (upsert)."""
+    """Set a single setting value (upsert). Enforces minimums."""
+    if key == "scraper_dhl_interval_minutes":
+        value = str(max(int(value), DHL_MIN_INTERVAL_MINUTES))
     conn = db.get_conn()
     conn.execute(
         "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",

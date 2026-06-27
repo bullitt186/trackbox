@@ -102,9 +102,10 @@ class ScraperScheduler:
         for i, shipment in enumerate(shipments_due):
             if not self._running:
                 break
-            # Add jitter delay between shipments (skip for first one)
-            if i > 0 and spacing > 0:
-                jitter = random.uniform(0, min(spacing * 0.5, 30))
+            # DHL rate limit: min 5s between requests. Add jitter on top.
+            if i > 0:
+                min_delay = 6  # 5s DHL minimum + 1s safety
+                jitter = random.uniform(min_delay, max(min_delay, spacing * 0.5))
                 await asyncio.sleep(jitter)
 
             await self._scrape_shipment(shipment)
