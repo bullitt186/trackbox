@@ -45,7 +45,7 @@ jobs:
           echo "Waiting for trackbox to start..."
           sleep 25
           for i in 1 2 3 4 5; do
-            if curl -sf http://localhost:8900/health > /dev/null 2>&1; then
+            if curl -sf http://192.168.0.50:8900/health > /dev/null 2>&1; then
               echo "Health check passed"
               exit 0
             fi
