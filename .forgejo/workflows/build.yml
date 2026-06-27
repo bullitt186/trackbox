@@ -46,17 +46,14 @@ jobs:
             echo "python3 not available on runner host — skipping lock file check (enforced in Docker test stage)"
           fi
 
-          # ── Test (lint + pytest + security) — reuse cached layers ────────────
-          BUILDKIT_CACHE_IMAGE="git.stahmer.net/bullitt/trackbox:buildcache"
-          DOCKER_BUILDKIT=1 docker build --target test \
-            --cache-from "type=registry,ref=${BUILDKIT_CACHE_IMAGE}" .
+          # ── Test (lint + pytest + security) ─────────────────────────────────
+          docker build --target test .
 
-          # ── Build production image — reuse cached layers ──────────────────────
+          # ── Build production image ───────────────────────────────────────────
           echo "${REGISTRY_TOKEN}" | docker login git.stahmer.net -u bullitt --password-stdin
           BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          DOCKER_BUILDKIT=1 docker build \
+          docker build \
             --target production \
-            --cache-from "type=registry,ref=${BUILDKIT_CACHE_IMAGE}" \
             --build-arg VERSION="${VERSION}" \
             --build-arg BUILD_TIME="${BUILD_TIME}" \
             -t git.stahmer.net/bullitt/trackbox:${SHA} \
