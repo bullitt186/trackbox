@@ -40,5 +40,20 @@ jobs:
             -H "X-Api-Secret: ${KOMODO_SECRET}" \
             -d '{"type":"DeployStack","params":{"stack":"n8n"}}'
 
+      - name: Verify deployment
+        run: |
+          echo "Waiting for trackbox to start..."
+          sleep 25
+          for i in 1 2 3 4 5; do
+            if curl -sf http://localhost:8900/health > /dev/null 2>&1; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i: waiting..."
+            sleep 10
+          done
+          echo "Health check FAILED after 5 attempts"
+          exit 1
+
       - name: Cleanup
         run: rm -rf /tmp/trackbox-ci
