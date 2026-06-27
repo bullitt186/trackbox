@@ -1,8 +1,11 @@
 from fastapi import FastAPI, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
@@ -15,7 +18,17 @@ VALID_STATES = [
 ]
 
 app = FastAPI(title="Trackbox")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 templates = Jinja2Templates(directory="templates")
+
+# Serve frontend build output if it exists
+if os.path.isdir("frontend/dist"):
+    app.mount("/app", StaticFiles(directory="frontend/dist", html=True), name="frontend")
 
 
 class EmailPayload(BaseModel):
