@@ -21,6 +21,15 @@
         form { margin-top: 1.5rem; }
         select, input, button { padding: 0.4rem; font-size: 0.9rem; }
         button { cursor: pointer; }
+        .progress-bar { display: flex; justify-content: space-between; margin: 1.5rem 0; position: relative; }
+        .progress-bar::before { content: ''; position: absolute; top: 10px; left: 10%; right: 10%; height: 3px; background: #ddd; z-index: 0; }
+        .progress-step { text-align: center; flex: 1; position: relative; z-index: 1; }
+        .progress-step .dot { width: 20px; height: 20px; border-radius: 50%; background: #ddd; margin: 0 auto 0.3rem; border: 2px solid #ddd; }
+        .progress-step span { font-size: 0.7rem; color: #999; display: block; }
+        .progress-step.done .dot { background: #28a745; border-color: #28a745; }
+        .progress-step.done span { color: #333; }
+        .progress-step.current .dot { border-color: #0066cc; background: #0066cc; box-shadow: 0 0 0 3px rgba(0,102,204,0.2); }
+        .progress-step.current span { font-weight: 600; color: #0066cc; }
         .delete-form { margin-top: 2rem; }
         .delete-form button { background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; }
     </style>
@@ -35,9 +44,21 @@
         <button type="submit" style="font-size:0.8rem">Save</button>
     </form>
 
+    {% set steps = ["preparing", "shipped", "in_transit", "out_for_delivery", "delivered"] %}
+    {% set current_idx = steps.index(shipment.current_state) if shipment.current_state in steps else -1 %}
+    <div class="progress-bar">
+        {% for step in steps %}
+        <div class="progress-step {% if steps.index(step) <= current_idx %}done{% endif %} {% if step == shipment.current_state %}current{% endif %}">
+            <div class="dot"></div>
+            <span>{{ state_labels.get(step, step) }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% if shipment.current_state in ["delayed", "exception"] %}
+    <p style="margin:0.5rem 0"><span class="state state-{{ shipment.current_state }}">{{ state_labels.get(shipment.current_state, shipment.current_state) }}</span></p>
+    {% endif %}
+
     <dl>
-        <dt>State</dt>
-        <dd><span class="state state-{{ shipment.current_state }}">{{ state_labels.get(shipment.current_state, shipment.current_state) }}</span></dd>
         <dt>Carrier</dt>
         <dd>{{ shipment.carrier or "—" }}</dd>
         <dt>Tracking Number</dt>
