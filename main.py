@@ -265,9 +265,7 @@ async def delete_shipment(shipment_id: int):
 @app.on_event("startup")
 def validate_env():
     """Warn about missing optional config."""
-    import logging
-    logger = logging.getLogger("trackbox.startup")
+    import logging  # noqa: E402
+    log = logging.getLogger("trackbox.startup")
     if not os.getenv("OPENAI_API_KEY"):
-        logger.warning("OPENAI_API_KEY not set - AI extraction will fail")
-    if os.getenv("DATABASE_PATH", "").startswith(":memory"):
-        logger.warning("Using in-memory database - data will not persist")
+        log.warning("OPENAI_API_KEY not set - AI extraction will fail")
