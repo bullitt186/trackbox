@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
-  ArrowLeft, ExternalLink, Copy, Check, Pencil, Trash2, X, Save,
+  ArrowLeft, ExternalLink, Copy, Check, Pencil, Trash2, X, Save, RefreshCw,
 } from "lucide-react"
 import * as Dialog from "@radix-ui/react-dialog"
 import * as Select from "@radix-ui/react-select"
@@ -89,6 +89,17 @@ function CopyTrackingButton({ text }: { text: string }) {
   )
 }
 
+function SourceBadge({ source }: { source: string }) {
+  const icon = source === "scraper" ? "\u{1F504}" : source === "email" ? "\u{1F4E7}" : "\u{270F}\u{FE0F}"
+  const label = source === "scraper" ? "Scraper" : source === "email" ? "Email" : "Manual"
+  return (
+    <Badge variant="outline" className="text-xs capitalize gap-1">
+      <span>{icon}</span>
+      {label}
+    </Badge>
+  )
+}
+
 function EventRow({ event }: { event: ShipmentEvent }) {
   return (
     <tr className="border-b border-border last:border-0 hover:bg-accent/30 transition-colors">
@@ -100,7 +111,7 @@ function EventRow({ event }: { event: ShipmentEvent }) {
       </td>
       <td className="py-2.5 text-sm">{event.notes ?? "—"}</td>
       <td className="py-2.5 pl-4">
-        <Badge variant="outline" className="text-xs capitalize">{event.source}</Badge>
+        <SourceBadge source={event.source} />
       </td>
     </tr>
   )
@@ -143,6 +154,8 @@ export default function ShipmentDetail() {
   const [saving, setSaving] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [copiedTracking, setCopiedTracking] = useState(false)
+  const [scraping, setScraping] = useState(false)
+  const [scrapeResult, setScrapeResult] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -195,6 +208,36 @@ export default function ShipmentDetail() {
     if (!shipment) return
     await deleteShipment(shipment.id)
     navigate("/")
+  }
+
+  const handleScrapeNow = async () => {
+    if (!shipment) return
+    setScraping(true)
+    setScrapeResult(null)
+    try {
+      const resp = await fetch(`/api/shipments/${shipment.id}/scrape`, { method: "POST" })
+      const data = await resp.json()
+      if (data.error) {
+        setScrapeResult(data.error)
+      } else {
+        setScrapeResult(data.state_changed ? "Status updated!" : "No change")
+        await load()
+      }
+    } catch {
+      setScrapeResult("Request failed")
+    }
+    setScraping(false)
+    setTimeout(() => setScrapeResult(null), 3000)
+  }
+
+  const handleToggleScrape = async (enabled: boolean) => {
+    if (!shipment) return
+    await fetch(`/api/shipments/${shipment.id}/scrape`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    })
+    await load()
   }
 
   const copyTracking = () => {
@@ -333,6 +376,62 @@ export default function ShipmentDetail() {
           </dl>
         </CardContent>
       </Card>
+
+      {/* Scraper status */}
+      {!isDelivered && shipment.scrape_enabled !== undefined && (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Scraper</CardTitle>
+              <div className="flex items-center gap-2">
+                {shipment.scrape_enabled ? (
+                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 text-xs">
+                    Active
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">Disabled</Badge>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+              <div>
+                <span className="text-xs text-muted-foreground block">Fail Count</span>
+                <span className="font-medium">{shipment.scrape_fail_count ?? 0}</span>
+              </div>
+              {shipment.last_scraped_at && (
+                <div>
+                  <span className="text-xs text-muted-foreground block">Last Scraped</span>
+                  <span className="font-medium">{relativeTime(shipment.last_scraped_at as string)}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleScrapeNow}
+                disabled={scraping}
+                className="gap-1.5"
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", scraping && "animate-spin")} />
+                {scraping ? "Scraping..." : "Scrape Now"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleToggleScrape(!shipment.scrape_enabled)}
+              >
+                {shipment.scrape_enabled ? "Disable" : "Enable"}
+              </Button>
+              {scrapeResult && (
+                <span className="text-xs text-muted-foreground">{scrapeResult}</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* State update */}
       {!isDelivered && (

@@ -15,8 +15,11 @@ load_dotenv()
 _START_TIME = time.time()
 
 import db
+import settings as app_settings
 from ingest import process_email
 from logging_config import setup_logging
+from scheduler import ScraperScheduler, scrape_single
+from scrapers import list_scrapers
 
 VALID_STATES = [
     "unknown", "preparing", "shipped", "in_transit",
@@ -50,10 +53,20 @@ class EmailPayload(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+scheduler = ScraperScheduler()
+
+
 @app.on_event("startup")
 def startup():
     setup_logging()
     db.init_db()
+    app_settings.init_settings()
+    scheduler.start()
+
+
+@app.on_event("shutdown")
+def shutdown():
+    scheduler.stop()
 
 
 _ingest_timestamps: list = []
@@ -191,6 +204,80 @@ async def api_parsers():
     rows = conn.execute("SELECT * FROM parsers ORDER BY use_count DESC").fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+# --- Settings endpoints ---
+
+
+@app.get("/api/settings")
+async def api_get_settings():
+    """Get all settings as JSON."""
+    return app_settings.get_all_settings()
+
+
+@app.put("/api/settings")
+async def api_update_settings(request: Request):
+    """Update settings (JSON body with key-value pairs)."""
+    body = await request.json()
+    for key, value in body.items():
+        app_settings.set_setting(key, str(value))
+    return app_settings.get_all_settings()
+
+
+# --- Scraper endpoints ---
+
+
+@app.get("/api/scrapers")
+async def api_list_scrapers():
+    """List available scrapers with status."""
+    scrapers = list_scrapers()
+    dhl_enabled = app_settings.get_setting("scraper_dhl_enabled", "true")
+    dhl_key = app_settings.get_setting("scraper_dhl_api_key", "")
+    for s in scrapers:
+        if s["carrier"] == "dhl":
+            s["enabled"] = dhl_enabled.lower() == "true"
+            s["configured"] = bool(dhl_key)
+    return {
+        "scrapers": scrapers,
+        "scheduler_running": scheduler.running,
+        "last_cycle_at": scheduler.last_cycle_at,
+    }
+
+
+@app.post("/api/shipments/{shipment_id}/scrape")
+async def api_scrape_shipment(shipment_id: int):
+    """Trigger immediate scrape for this shipment."""
+    shipment = db.get_shipment(shipment_id)
+    if not shipment:
+        raise HTTPException(404)
+    result = await scrape_single(shipment_id)
+    if "error" in result:
+        return JSONResponse(content=result, status_code=422)
+    return result
+
+
+@app.put("/api/shipments/{shipment_id}/scrape")
+async def api_toggle_scrape(shipment_id: int, request: Request):
+    """Enable/disable scraping for a shipment."""
+    shipment = db.get_shipment(shipment_id)
+    if not shipment:
+        raise HTTPException(404)
+    body = await request.json()
+    enabled = 1 if body.get("enabled", True) else 0
+    conn = db.get_conn()
+    conn.execute(
+        "UPDATE shipments SET scrape_enabled = ? WHERE id = ?",
+        (enabled, shipment_id),
+    )
+    # If re-enabling, reset fail count
+    if enabled:
+        conn.execute(
+            "UPDATE shipments SET scrape_fail_count = 0 WHERE id = ?",
+            (shipment_id,),
+        )
+    conn.commit()
+    conn.close()
+    return db.get_shipment(shipment_id)
 
 
 if not _HAS_FRONTEND:

@@ -14,6 +14,9 @@ export interface Shipment {
   last_updated_at: string | null
   last_event?: { state: ShipmentState; notes: string | null; occurred_at: string | null } | null
   events?: ShipmentEvent[]
+  scrape_enabled?: number
+  scrape_fail_count?: number
+  last_scraped_at?: string | null
 }
 
 export interface ShipmentEvent {

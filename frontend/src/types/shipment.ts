@@ -5,7 +5,7 @@ export interface ShipmentEvent {
   shipment_id: number
   state: ShipmentState
   notes: string | null
-  source: 'email' | 'manual'
+  source: 'email' | 'manual' | 'scraper'
   occurred_at: string | null
   message_id: string | null
 }
@@ -20,6 +20,9 @@ export interface Shipment {
   current_state: ShipmentState
   first_seen_at: string | null
   last_updated_at: string | null
+  scrape_enabled?: number
+  scrape_fail_count?: number
+  last_scraped_at?: string | null
   events?: ShipmentEvent[]
   last_event?: ShipmentEvent | null
 }

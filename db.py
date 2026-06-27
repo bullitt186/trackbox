@@ -67,7 +67,23 @@ def init_db():
             created_at TEXT,
             use_count INTEGER DEFAULT 0
         );
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        );
     """)
+    # Migration: add scraping columns to shipments
+    for col, default in [
+        ("scrape_enabled", "1"),
+        ("scrape_fail_count", "0"),
+        ("last_scraped_at", "NULL"),
+    ]:
+        try:
+            col_type = "TEXT" if col == "last_scraped_at" else "INTEGER"
+            conn.execute(f"ALTER TABLE shipments ADD COLUMN {col} {col_type} DEFAULT {default}")
+            conn.commit()
+        except Exception:
+            pass
     # Migration: fix state inconsistencies (delivered in events but not in current_state)
     rows = conn.execute("""
         SELECT s.id, s.current_state,

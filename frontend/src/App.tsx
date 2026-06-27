@@ -1,17 +1,19 @@
 import { useEffect } from "react"
 import { Routes, Route, NavLink, useLocation } from "react-router-dom"
-import { LayoutDashboard, Package, Cpu, BarChart2 } from "lucide-react"
+import { LayoutDashboard, Package, Cpu, BarChart2, Settings as SettingsIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import Dashboard from "@/pages/Dashboard"
 import ShipmentDetail from "@/pages/ShipmentDetail"
 import Parsers from "@/pages/Parsers"
 import Stats from "@/pages/Stats"
+import Settings from "@/pages/Settings"
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/parsers", label: "Parsers", icon: Cpu, exact: false },
   { to: "/stats", label: "Stats", icon: BarChart2, exact: false },
+  { to: "/settings", label: "Settings", icon: SettingsIcon, exact: false },
 ]
 
 function NavItem({ to, label, icon: Icon, exact }: { to: string; label: string; icon: typeof LayoutDashboard; exact: boolean }) {
@@ -107,6 +109,7 @@ export default function App() {
               <Route path="/shipments/:id" element={<ShipmentDetail />} />
               <Route path="/parsers" element={<Parsers />} />
               <Route path="/stats" element={<Stats />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>
         </div>
