@@ -11,6 +11,19 @@ const CARRIER_ICONS: Record<string, string> = {
   amazon: "/carriers/ww-amazon-logistics.svg",
 }
 
+export const CARRIER_DISPLAY: Record<string, { name: string; country: string }> = {
+  dhl:        { name: "DHL Paket",        country: "Germany"       },
+  hermes:     { name: "Hermes",           country: "Germany"       },
+  dpd:        { name: "DPD",              country: "Germany"       },
+  gls:        { name: "GLS",              country: "Germany"       },
+  ups:        { name: "UPS",              country: "United States" },
+  fedex:      { name: "FedEx",            country: "United States" },
+  amazon:     { name: "Amazon Logistics", country: "Germany"       },
+  usps:       { name: "USPS",             country: "United States" },
+  cainiao:    { name: "Cainiao",          country: "China"         },
+  yunexpress: { name: "YunExpress",       country: "China"         },
+}
+
 export function getCarrierIcon(carrier: string | null | undefined): string | null {
   if (!carrier) return null
   const key = carrier.toLowerCase()
@@ -18,4 +31,13 @@ export function getCarrierIcon(carrier: string | null | undefined): string | nul
     if (key.includes(k)) return path
   }
   return null
+}
+
+export function getCarrierDisplay(carrier: string | null | undefined): { name: string; country: string } | null {
+  if (!carrier) return null
+  const key = carrier.toLowerCase()
+  for (const [k, display] of Object.entries(CARRIER_DISPLAY)) {
+    if (key.includes(k)) return display
+  }
+  return { name: carrier, country: "" }
 }
