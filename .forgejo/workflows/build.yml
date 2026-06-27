@@ -103,13 +103,11 @@ jobs:
           done
           [ "${healthy}" = "1" ] || { echo "Health check timed out"; exit 1; }
 
-          # Commit version bump and tag release
-          git config user.email "ci@stahmer.net"
-          git config user.name "Trackbox CI"
-          git add VERSION
-          git diff --cached --quiet || git commit -m "chore: release v${VERSION} [skip ci]"
-          git tag "v${VERSION}" 2>/dev/null || true
-          git push "http://bullitt:${REGISTRY_TOKEN}@192.168.0.2:3002/bullitt/trackbox.git" HEAD:main --tags || true
+          # Create semver tag via Forgejo API (no git push needed)
+          curl -sf -X POST "http://192.168.0.2:3002/api/v1/repos/bullitt/trackbox/tags" \
+            -H "Authorization: token ${REGISTRY_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag_name\":\"v${VERSION}\",\"target\":\"${SHA}\",\"message\":\"v${VERSION}\"}" 2>/dev/null || true
 
           # Create Forgejo release
           if [ -n "${LAST_TAG}" ]; then
