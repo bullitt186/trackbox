@@ -9,6 +9,8 @@ COPY . .
 RUN ruff check . && pytest tests/ -q
 
 FROM base AS production
+ARG VERSION=dev
+ENV TRACKBOX_VERSION=${VERSION}
 COPY . .
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

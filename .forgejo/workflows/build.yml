@@ -12,6 +12,7 @@ jobs:
         run: |
           rm -rf /tmp/trackbox-ci
           git clone --depth 1 http://192.168.0.2:3002/bullitt/trackbox.git /tmp/trackbox-ci
+          cd /tmp/trackbox-ci && echo "SHA=$(git rev-parse --short HEAD)" >> /tmp/trackbox-ci/.build-env
 
       - name: Test
         run: docker build --target test /tmp/trackbox-ci
@@ -21,8 +22,11 @@ jobs:
           REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
         run: |
           set -ex
+          . /tmp/trackbox-ci/.build-env
           echo "${REGISTRY_TOKEN}" | docker login git.stahmer.net -u bullitt --password-stdin
-          docker build --target production -t git.stahmer.net/bullitt/trackbox:latest /tmp/trackbox-ci
+          docker build --target production --build-arg VERSION=${SHA} -t git.stahmer.net/bullitt/trackbox:${SHA} /tmp/trackbox-ci
+          docker tag git.stahmer.net/bullitt/trackbox:${SHA} git.stahmer.net/bullitt/trackbox:latest
+          docker push git.stahmer.net/bullitt/trackbox:${SHA}
           docker push git.stahmer.net/bullitt/trackbox:latest
           docker tag git.stahmer.net/bullitt/trackbox:latest git.stahmer.lan/bullitt/trackbox:latest
 
@@ -42,17 +46,16 @@ jobs:
 
       - name: Verify deployment
         run: |
-          echo "Waiting for trackbox to start..."
           sleep 25
           for i in 1 2 3 4 5; do
             if curl -sf http://192.168.0.50:8900/health > /dev/null 2>&1; then
               echo "Health check passed"
+              curl -s http://192.168.0.50:8900/health
               exit 0
             fi
-            echo "Attempt $i: waiting..."
             sleep 10
           done
-          echo "Health check FAILED after 5 attempts"
+          echo "Health check FAILED"
           exit 1
 
       - name: Cleanup
