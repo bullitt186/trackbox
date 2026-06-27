@@ -10,8 +10,9 @@
     .progress-step span { font-size: 0.7rem; color: var(--text-muted); display: block; }
     .progress-step.done .dot { background: var(--success); border-color: var(--success); }
     .progress-step.done span { color: var(--text); }
-    .progress-step.current .dot { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent); }
+    .progress-step.current .dot { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent); animation: pulse 2s ease-in-out infinite; }
     .progress-step.current span { font-weight: 700; color: var(--accent); }
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent); } 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 10%, transparent); } }
     .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
     .meta-item { background: var(--bg-surface); border-radius: 8px; padding: 0.8rem; }
     .meta-item dt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.2rem; }

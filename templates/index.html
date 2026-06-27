@@ -7,7 +7,7 @@
 {% set active = shipments | selectattr("current_state", "ne", "delivered") | list %}
 {% set delivered = shipments | selectattr("current_state", "eq", "delivered") | list %}
 
-<h1>Trackbox</h1>
+<h1 style="background:linear-gradient(135deg, var(--accent), var(--success)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">Trackbox</h1>
 
 {% if not active and delivered %}
 <p style="text-align:center; padding:1.5rem; color:var(--success)">All packages delivered!</p>
@@ -29,7 +29,7 @@
         {% for s in active %}
         <tr{% if s.current_state in ["delayed", "exception"] %} style="background:var(--state-alert-bg)"{% endif %}>
             <td><a href="/shipments/{{ s.id }}" style="max-width:220px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom">{{ s.title or s.order_number or s.tracking_number or "Shipment #" ~ s.id }}</a></td>
-            <td style="color:var(--text-muted)">{{ s.carrier or "" }}</td>
+            <td style="color:var(--text-muted)">{% if s.carrier == "DHL" %}🟡{% elif s.carrier == "Hermes" %}🔵{% elif s.carrier == "DPD" %}🔴{% elif s.carrier == "Amazon Logistics" %}📦{% elif s.carrier %}🚚{% endif %} {{ s.carrier or "" }}</td>
             <td><span class="state state-{{ s.current_state }}">{{ state_labels.get(s.current_state, s.current_state) }}</span></td>
             <td>{% if s.tracking_link %}<a href="{{ s.tracking_link }}" target="_blank" class="btn btn-track">Track ↗</a>{% endif %}</td>
             <td>{% if s.last_updated_at %}<time datetime="{{ s.last_updated_at }}">{{ s.last_updated_at[:10] }}</time>{% else %}—{% endif %}</td>
@@ -48,7 +48,7 @@
             {% for s in delivered %}
             <tr>
                 <td><a href="/shipments/{{ s.id }}">{{ s.title or s.order_number or s.tracking_number or "Shipment #" ~ s.id }}</a></td>
-                <td style="color:var(--text-muted)">{{ s.carrier or "" }}</td>
+                <td style="color:var(--text-muted)">{% if s.carrier == "DHL" %}🟡{% elif s.carrier == "Hermes" %}🔵{% elif s.carrier == "DPD" %}🔴{% elif s.carrier == "Amazon Logistics" %}📦{% elif s.carrier %}🚚{% endif %} {{ s.carrier or "" }}</td>
                 <td>{% if s.last_updated_at %}<time datetime="{{ s.last_updated_at }}">{{ s.last_updated_at[:10] }}</time>{% else %}—{% endif %}</td>
             </tr>
             {% endfor %}
