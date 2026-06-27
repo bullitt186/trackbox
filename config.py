@@ -9,6 +9,13 @@ RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "30"))
 DHL_API_KEY: str = os.getenv("DHL_API_KEY", "")
 DHL_API_SECRET: str = os.getenv("DHL_API_SECRET", "")
 
+# API key for authenticating mutation endpoints.
+# When unset (empty string) auth is skipped — dev/local mode only.
+TRACKBOX_API_KEY: str = os.getenv("TRACKBOX_API_KEY", "")
+
+# Retention for scrape_log rows (days). Older rows are pruned nightly.
+SCRAPE_LOG_RETENTION_DAYS: int = int(os.getenv("SCRAPE_LOG_RETENTION_DAYS", "30"))
+
 IMAP_HOST: str = os.getenv("IMAP_HOST", "")
 IMAP_PORT: int = int(os.getenv("IMAP_PORT", "993"))
 IMAP_USER: str = os.getenv("IMAP_USER", "")

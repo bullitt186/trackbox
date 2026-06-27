@@ -1,4 +1,5 @@
 import json
+import logging
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -6,6 +7,8 @@ from datetime import datetime, timezone
 import config
 
 DB_PATH = config.DATABASE_PATH
+
+log = logging.getLogger("trackbox.db")
 
 
 def get_conn() -> sqlite3.Connection:
@@ -26,19 +29,28 @@ def get_db():
         conn.close()
 
 
+def _apply_column_migration(conn: sqlite3.Connection, table: str, col: str, col_type: str, default: str) -> None:
+    """Add a column to a table if it doesn't exist yet. Logs failures clearly."""
+    try:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_type} DEFAULT {default}")
+        conn.commit()
+        log.debug("Migration: added column %s.%s", table, col)
+    except sqlite3.OperationalError as e:
+        msg = str(e).lower()
+        if "duplicate column name" in msg or "already exists" in msg:
+            pass  # Column already present — expected on re-runs
+        else:
+            log.error("Migration failed adding %s.%s: %s", table, col, e)
+            raise
+
+
 def init_db():
     conn = get_conn()
+
+    # Step 1: Create all base tables (idempotent)
     conn.executescript("""
-        -- Migration: add message_id to events if missing
         CREATE TABLE IF NOT EXISTS _migrations (id INTEGER PRIMARY KEY, name TEXT UNIQUE);
-    """)
-    try:
-        conn.execute("ALTER TABLE events ADD COLUMN message_id TEXT")
-        conn.execute("INSERT OR IGNORE INTO _migrations (name) VALUES ('add_message_id')")
-        conn.commit()
-    except Exception:
-        pass
-    conn.executescript("""
+
         CREATE TABLE IF NOT EXISTS shipments (
             id INTEGER PRIMARY KEY,
             title TEXT,
@@ -84,20 +96,45 @@ def init_db():
             occurred_at TEXT
         );
     """)
+
+    # Step 2: Column migrations (tables guaranteed to exist above)
+
+    # Migration: add message_id to events
+    try:
+        conn.execute("ALTER TABLE events ADD COLUMN message_id TEXT")
+        conn.execute("INSERT OR IGNORE INTO _migrations (name) VALUES ('add_message_id')")
+        conn.commit()
+        log.debug("Migration: added events.message_id")
+    except sqlite3.OperationalError as e:
+        msg = str(e).lower()
+        if "duplicate column name" not in msg and "already exists" not in msg:
+            log.error("Migration add_message_id failed: %s", e)
+            raise
+
     # Migration: add scraping and archive columns to shipments
-    for col, default in [
-        ("scrape_enabled", "1"),
-        ("scrape_fail_count", "0"),
-        ("last_scraped_at", "NULL"),
-        ("archived", "0"),
+    for col, col_type, default in [
+        ("scrape_enabled", "INTEGER", "1"),
+        ("scrape_fail_count", "INTEGER", "0"),
+        ("last_scraped_at", "TEXT", "NULL"),
+        ("archived", "INTEGER", "0"),
     ]:
-        try:
-            col_type = "TEXT" if col == "last_scraped_at" else "INTEGER"
-            conn.execute(f"ALTER TABLE shipments ADD COLUMN {col} {col_type} DEFAULT {default}")
-            conn.commit()
-        except Exception:
-            pass
-    # Migration: fix state inconsistencies (delivered in events but not in current_state)
+        _apply_column_migration(conn, "shipments", col, col_type, default)
+
+    # Step 3: Indexes on hot query paths (idempotent)
+    conn.executescript("""
+        CREATE INDEX IF NOT EXISTS idx_events_message_id
+            ON events(message_id);
+        CREATE INDEX IF NOT EXISTS idx_shipments_tracking_number
+            ON shipments(tracking_number);
+        CREATE INDEX IF NOT EXISTS idx_shipments_order_number
+            ON shipments(order_number);
+        CREATE INDEX IF NOT EXISTS idx_shipments_scrape_queue
+            ON shipments(scrape_enabled, scrape_fail_count, current_state, last_scraped_at);
+        CREATE INDEX IF NOT EXISTS idx_scrape_log_occurred_at
+            ON scrape_log(occurred_at);
+    """)
+
+    # Step 4: Data migration — fix state inconsistencies (delivered in events but not in current_state)
     rows = conn.execute("""
         SELECT s.id, s.current_state,
                (SELECT e.state FROM events e WHERE e.shipment_id = s.id ORDER BY e.occurred_at DESC LIMIT 1) as last_event_state
@@ -109,6 +146,21 @@ def init_db():
             conn.execute("UPDATE shipments SET current_state = 'delivered' WHERE id = ?", (row["id"],))
     conn.commit()
     conn.close()
+
+
+def purge_old_scrape_log(retention_days: int) -> int:
+    """Delete scrape_log rows older than retention_days. Returns rows deleted."""
+    conn = get_conn()
+    cur = conn.execute(
+        "DELETE FROM scrape_log WHERE occurred_at < datetime('now', ?)",
+        (f"-{retention_days} days",),
+    )
+    deleted = cur.rowcount
+    conn.commit()
+    conn.close()
+    if deleted:
+        log.info("scrape_log retention: deleted %d rows older than %d days", deleted, retention_days)
+    return deleted
 
 
 def _now():

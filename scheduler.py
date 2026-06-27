@@ -10,13 +10,18 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 
+import config
 import db
+import metrics
 import settings
 from ingest import should_update_state
 from scrapers import get_scraper
 from scrapers.base import ScraperError, ScraperResult
 
 log = logging.getLogger("trackbox.scheduler")
+
+# How often the nightly scrape_log retention purge runs (once per day at cycle time).
+_RETENTION_PURGE_INTERVAL_HOURS = 24
 
 
 class ScraperScheduler:
@@ -27,6 +32,7 @@ class ScraperScheduler:
         self._running = False
         self._last_cycle_at: str | None = None
         self._notifier = notifier
+        self._last_purge_at: datetime | None = None
 
     @property
     def last_cycle_at(self) -> str | None:
@@ -62,6 +68,10 @@ class ScraperScheduler:
         from scrapers import list_scrapers
 
         now = datetime.now(timezone.utc)
+
+        # Item 2: periodic scrape_log retention purge (nightly)
+        self._maybe_purge_scrape_log(now)
+
         self._disable_retention_expired(now, list_scrapers())
         scrapers_info = list_scrapers()
 
@@ -86,19 +96,6 @@ class ScraperScheduler:
             return
 
         cutoff = (now - timedelta(minutes=min_interval)).isoformat()
-
-        # Build per-carrier retention config for filtering
-        retention_by_carrier: dict[str, int] = {}
-        for s in scrapers_info:
-            carrier = s["carrier"]
-            try:
-                days = int(settings.get_setting(
-                    f"scraper_{carrier}_retention_days",
-                    str(settings.DEFAULT_RETENTION_DAYS),
-                ))
-            except ValueError:
-                days = settings.DEFAULT_RETENTION_DAYS
-            retention_by_carrier[carrier] = days
 
         # Find shipments due for scraping (excluding delivered)
         conn = db.get_conn()
@@ -128,6 +125,7 @@ class ScraperScheduler:
 
         self._last_cycle_at = now.isoformat()
         log.info("Scraper cycle: %d shipment(s) due", len(shipments_due))
+        metrics.increment("scheduler.cycle")
 
         random.shuffle(shipments_due)
 
@@ -142,6 +140,20 @@ class ScraperScheduler:
                 await asyncio.sleep(jitter)
 
             await self._scrape_shipment(shipment)
+
+    def _maybe_purge_scrape_log(self, now: datetime) -> None:
+        """Run scrape_log retention purge at most once per day."""
+        if self._last_purge_at is not None:
+            hours_since = (now - self._last_purge_at).total_seconds() / 3600
+            if hours_since < _RETENTION_PURGE_INTERVAL_HOURS:
+                return
+        self._last_purge_at = now
+        try:
+            deleted = db.purge_old_scrape_log(config.SCRAPE_LOG_RETENTION_DAYS)
+            if deleted:
+                metrics.increment("scrape_log.purged_rows")
+        except Exception:
+            log.exception("scrape_log retention purge failed")
 
     async def _scrape_shipment(self, shipment: dict) -> None:
         """Scrape a single shipment and handle results."""
@@ -176,6 +188,7 @@ class ScraperScheduler:
                 status="timeout", state_before=current_state, state_after=None,
                 message="Request timed out", duration_ms=duration_ms,
             )
+            metrics.increment("scrape.timeout")
             return
         except ScraperError as e:
             duration_ms = int((time_mod.time() - start_time) * 1000)
@@ -187,6 +200,7 @@ class ScraperScheduler:
                 status="error", state_before=current_state, state_after=None,
                 message=str(e), duration_ms=duration_ms,
             )
+            metrics.increment("scrape.error")
             self._handle_failure(shipment_id, shipment["scrape_fail_count"], str(e))
             return
         except Exception as e:
@@ -199,6 +213,7 @@ class ScraperScheduler:
                 status="error", state_before=current_state, state_after=None,
                 message=str(e), duration_ms=duration_ms,
             )
+            metrics.increment("scrape.error")
             self._handle_failure(shipment_id, shipment["scrape_fail_count"], str(e))
             return
 
@@ -211,12 +226,14 @@ class ScraperScheduler:
                 status="error", state_before=current_state, state_after=None,
                 message="Tracking number not found", duration_ms=duration_ms,
             )
+            metrics.increment("scrape.not_found")
             self._handle_failure(
                 shipment_id, shipment["scrape_fail_count"], "Tracking number not found"
             )
             return
 
         # Success: update shipment
+        metrics.increment("scrape.success")
         self._apply_result(shipment, result, duration_ms)
 
     def _apply_result(self, shipment: dict, result: ScraperResult, duration_ms: int) -> None:
@@ -252,6 +269,7 @@ class ScraperScheduler:
                 status="success", state_before=current_state, state_after=new_state,
                 message=result.description, duration_ms=duration_ms,
             )
+            metrics.increment("scrape.state_changed")
             log.info(
                 "Shipment %d: %s -> %s (scraper)",
                 shipment_id, current_state, new_state,
@@ -290,6 +308,7 @@ class ScraperScheduler:
                 status="disabled", state_before=current_state, state_after=None,
                 message="Scraping disabled after 3 failures", duration_ms=None,
             )
+            metrics.increment("scrape.disabled_by_failures")
             log.warning("Shipment %d: scraping disabled after 3 failures", shipment_id)
         else:
             conn.execute(
@@ -310,20 +329,12 @@ class ScraperScheduler:
         ).fetchall()
         conn.close()
 
-        retention_map = {s["carrier"]: s["max_retention_days"] for s in scrapers_info}
+        # Item 9: use shared retention helper instead of inline calculation
+        scrapers_map = {s["carrier"]: s for s in scrapers_info}
         expired_ids = []
         for row in rows:
             carrier = (row["carrier"] or "").lower()
-            max_days = retention_map.get(carrier, settings.DEFAULT_RETENTION_DAYS)
-            configured = settings.DEFAULT_RETENTION_DAYS
-            try:
-                configured = int(settings.get_setting(
-                    f"scraper_{carrier}_retention_days",
-                    str(settings.DEFAULT_RETENTION_DAYS),
-                ))
-            except ValueError:
-                pass
-            effective_days = min(configured, max_days)
+            effective_days = settings.compute_effective_retention(carrier, scrapers_map)
             try:
                 last_updated = datetime.fromisoformat(row["last_updated_at"].replace("Z", "+00:00"))
                 if last_updated.tzinfo is None:
@@ -342,6 +353,7 @@ class ScraperScheduler:
             )
             conn.commit()
             conn.close()
+            metrics.increment("scheduler.retention_expired")
             log.info("Retention expired: auto-archived %d shipment(s)", len(expired_ids))
 
 
@@ -397,6 +409,7 @@ async def scrape_single(shipment_id: int) -> dict:
             status="timeout", state_before=current_state, state_after=None,
             message="Request timed out", duration_ms=duration_ms,
         )
+        metrics.increment("scrape.timeout")
         return {"error": "Request timed out"}
     except ScraperError as e:
         duration_ms = int((time_mod.time() - start_time) * 1000)
@@ -405,6 +418,7 @@ async def scrape_single(shipment_id: int) -> dict:
             status="error", state_before=current_state, state_after=None,
             message=str(e), duration_ms=duration_ms,
         )
+        metrics.increment("scrape.error")
         return {"error": str(e)}
 
     duration_ms = int((time_mod.time() - start_time) * 1000)
@@ -415,6 +429,7 @@ async def scrape_single(shipment_id: int) -> dict:
             status="error", state_before=current_state, state_after=None,
             message="Tracking number not found by carrier API", duration_ms=duration_ms,
         )
+        metrics.increment("scrape.not_found")
         return {"error": "Tracking number not found by carrier API"}
 
     # Apply result
@@ -444,6 +459,7 @@ async def scrape_single(shipment_id: int) -> dict:
             message=result.description, duration_ms=duration_ms,
         )
         state_changed = True
+        metrics.increment("scrape.state_changed")
         if _notifier:
             asyncio.create_task(_notifier.publish("state_change", {
                 "shipment_id": shipment_id, "old_state": current_state, "new_state": new_state,
@@ -455,6 +471,7 @@ async def scrape_single(shipment_id: int) -> dict:
             message="No state change", duration_ms=duration_ms,
         )
 
+    metrics.increment("scrape.success")
     return {
         "success": True,
         "status": result.status,

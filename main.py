@@ -1,11 +1,14 @@
+import asyncio
+import logging
 import os
 import time
 import uuid
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -14,7 +17,9 @@ load_dotenv()
 
 _START_TIME = time.time()
 
+import config
 import db
+import metrics
 import settings as app_settings
 from imap_poller import IMAPPoller
 from ingest import process_email
@@ -24,6 +29,8 @@ from notifiers.mqtt import MQTTNotifier
 from scheduler import ScraperScheduler, scrape_single
 from scheduler import set_notifier as scheduler_set_notifier
 from scrapers import list_scrapers
+
+log = logging.getLogger("trackbox.main")
 
 VALID_STATES = [
     "unknown", "preparing", "shipped", "in_transit",
@@ -43,6 +50,24 @@ templates = Jinja2Templates(directory="templates")
 _HAS_FRONTEND = os.path.isdir("frontend/dist")
 if _HAS_FRONTEND:
     app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="static-assets")
+
+
+# ---------------------------------------------------------------------------
+# Auth dependency (Item 1)
+# When TRACKBOX_API_KEY is unset the check is a no-op (dev mode).
+# Set the env var in production to protect all mutation endpoints.
+# ---------------------------------------------------------------------------
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def require_api_key(api_key: str | None = Security(_api_key_header)) -> None:
+    """FastAPI dependency: enforce API key on mutation endpoints when configured."""
+    expected = config.TRACKBOX_API_KEY
+    if not expected:
+        # Dev mode — no key configured, all requests allowed
+        return
+    if not api_key or api_key != expected:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 
 class EmailPayload(BaseModel):
@@ -86,26 +111,51 @@ async def shutdown():
     await mqtt_notifier.stop()
 
 
+# NOTE: The ingest rate limiter uses a module-level Python list that is reset
+# on every process restart (deploy, crash, OOM kill). This means a full burst
+# of RATE_LIMIT_PER_MINUTE requests is allowed immediately after startup.
+# This is intentional for single-instance deployments; for stronger guarantees
+# the window state should be moved to SQLite or enforced at the reverse-proxy layer.
 _ingest_timestamps: list = []
 
 
-@app.post("/ingest")
+@app.post("/ingest", dependencies=[Depends(require_api_key)])
 async def ingest_email(payload: EmailPayload):
-    # ponytail: simple in-memory rate limit, 30 req/min
+    # Simple in-memory rate limit — see note above about restart-reset behaviour
     now = time.time()
     _ingest_timestamps[:] = [t for t in _ingest_timestamps if now - t < 60]
-    if len(_ingest_timestamps) >= 30:
-        raise HTTPException(429, detail="Rate limit exceeded (30/min)")
+    if len(_ingest_timestamps) >= config.RATE_LIMIT_PER_MINUTE:
+        metrics.increment("ingest.rate_limited")
+        raise HTTPException(429, detail=f"Rate limit exceeded ({config.RATE_LIMIT_PER_MINUTE}/min)")
     _ingest_timestamps.append(now)
 
     request_id = str(uuid.uuid4())[:8]
-    email = {"from": payload.from_, "subject": payload.subject, "body": payload.body, "html": payload.html, "product_name": payload.product_name, "message_id": payload.message_id, "date": payload.date}
+    email = {
+        "from": payload.from_,
+        "subject": payload.subject,
+        "body": payload.body,
+        "html": payload.html,
+        "product_name": payload.product_name,
+        "message_id": payload.message_id,
+        "date": payload.date,
+    }
     try:
-        result = process_email(email)
+        # Item 7: run the blocking ingest pipeline (SQLite + possible OpenAI call)
+        # in a thread-pool executor so the event loop stays responsive for the
+        # scheduler, IMAP poller, and MQTT tasks running concurrently.
+        result = await asyncio.to_thread(process_email, email)
     except Exception as e:
-        import logging
-        logging.getLogger("trackbox.ingest").exception("Ingest failed [%s]: %s", request_id, e)
-        return {"shipment_id": None, "state": None, "action": "error", "parser_status": "error", "error": str(e), "request_id": request_id}
+        metrics.increment("ingest.error")
+        log.exception("Ingest failed [%s]: %s", request_id, e)
+        return {
+            "shipment_id": None,
+            "state": None,
+            "action": "error",
+            "parser_status": "error",
+            "error": str(e),
+            "request_id": request_id,
+        }
+    metrics.increment(f"ingest.{result.get('action', 'unknown')}")
     result["request_id"] = request_id
     status = 201 if result.get("action") == "created" else 200
     return JSONResponse(content=result, status_code=status)
@@ -117,9 +167,19 @@ async def health():
     conn = db.get_conn()
     conn.execute("SELECT 1").fetchone()
     conn.close()
-    import config as cfg
     uptime = int(time.time() - _START_TIME)
-    return {"status": "ok", "version": cfg.TRACKBOX_VERSION, "build_time": cfg.TRACKBOX_BUILD_TIME, "uptime_seconds": uptime}
+    return {
+        "status": "ok",
+        "version": config.TRACKBOX_VERSION,
+        "build_time": config.TRACKBOX_BUILD_TIME,
+        "uptime_seconds": uptime,
+    }
+
+
+@app.get("/metrics")
+async def api_metrics():
+    """Expose in-process counters for observability."""
+    return metrics.get_metrics()
 
 
 @app.get("/api/stats")
@@ -157,15 +217,8 @@ def _annotate_stalled(shipments: list[dict]) -> None:
         # Retention window exceeded (scraping would find nothing anyway)
         if not stalled and s.get("last_updated_at"):
             carrier = (s.get("carrier") or "").lower()
-            max_ret = scrapers_map.get(carrier, {}).get("max_retention_days", app_settings.DEFAULT_RETENTION_DAYS)
-            try:
-                configured_ret = int(app_settings.get_setting(
-                    f"scraper_{carrier}_retention_days",
-                    str(app_settings.DEFAULT_RETENTION_DAYS),
-                ))
-            except ValueError:
-                configured_ret = app_settings.DEFAULT_RETENTION_DAYS
-            effective_ret = min(configured_ret, max_ret)
+            # Item 9: use shared retention helper instead of inline calculation
+            effective_ret = app_settings.compute_effective_retention(carrier, scrapers_map)
             try:
                 last_updated = datetime.fromisoformat(s["last_updated_at"].replace("Z", "+00:00"))
                 if last_updated.tzinfo is None:
@@ -220,16 +273,9 @@ async def api_shipment_detail(shipment_id: int):
     tracking_expires_at = None
     if shipment.get("current_state") == "delivered" and shipment.get("last_updated_at"):
         carrier = (shipment.get("carrier") or "").lower()
-        scrapers = {s["carrier"]: s for s in _list_scrapers()}
-        max_ret = scrapers.get(carrier, {}).get("max_retention_days", app_settings.DEFAULT_RETENTION_DAYS)
-        try:
-            configured_ret = int(app_settings.get_setting(
-                f"scraper_{carrier}_retention_days",
-                str(app_settings.DEFAULT_RETENTION_DAYS),
-            ))
-        except ValueError:
-            configured_ret = app_settings.DEFAULT_RETENTION_DAYS
-        effective_ret = min(configured_ret, max_ret)
+        scrapers_map = {s["carrier"]: s for s in _list_scrapers()}
+        # Item 9: use shared retention helper
+        effective_ret = app_settings.compute_effective_retention(carrier, scrapers_map)
         try:
             last_updated = datetime.fromisoformat(shipment["last_updated_at"].replace("Z", "+00:00"))
             if last_updated.tzinfo is None:
@@ -241,7 +287,7 @@ async def api_shipment_detail(shipment_id: int):
     return {**shipment, "events": events, "tracking_expires_at": tracking_expires_at}
 
 
-@app.put("/api/shipments/{shipment_id}")
+@app.put("/api/shipments/{shipment_id}", dependencies=[Depends(require_api_key)])
 async def api_update_shipment(shipment_id: int, request: Request):
     """Update shipment fields (title, state, carrier, etc)."""
     from ingest import should_update_state
@@ -265,17 +311,18 @@ async def api_update_shipment(shipment_id: int, request: Request):
     return db.get_shipment(shipment_id)
 
 
-@app.delete("/api/shipments/{shipment_id}")
+@app.delete("/api/shipments/{shipment_id}", dependencies=[Depends(require_api_key)])
 async def api_delete_shipment(shipment_id: int):
     """Delete a shipment and all its events."""
     shipment = db.get_shipment(shipment_id)
     if not shipment:
         raise HTTPException(404)
     db.delete_shipment(shipment_id)
+    metrics.increment("shipments.deleted")
     return {"deleted": shipment_id}
 
 
-@app.delete("/api/parsers/{parser_id}")
+@app.delete("/api/parsers/{parser_id}", dependencies=[Depends(require_api_key)])
 async def delete_parser(parser_id: int):
     """Delete a stored parser."""
     conn = db.get_conn()
@@ -303,7 +350,7 @@ async def api_get_settings():
     return app_settings.get_all_settings()
 
 
-@app.put("/api/settings")
+@app.put("/api/settings", dependencies=[Depends(require_api_key)])
 async def api_update_settings(request: Request):
     """Update settings (JSON body with key-value pairs)."""
     from scrapers import list_scrapers as _list_scrapers
@@ -340,6 +387,7 @@ async def api_scrape_log(
 async def api_list_scrapers():
     """List available scrapers with status."""
     scrapers = list_scrapers()
+    scrapers_map = {s["carrier"]: s for s in scrapers}
     for s in scrapers:
         carrier = s["carrier"]
         enabled = app_settings.get_setting(f"scraper_{carrier}_enabled", "true")
@@ -355,15 +403,8 @@ async def api_list_scrapers():
             )
         else:
             s["configured"] = True
-        # Inject user-configured retention days (capped at max)
-        try:
-            configured_ret = int(app_settings.get_setting(
-                f"scraper_{carrier}_retention_days",
-                str(app_settings.DEFAULT_RETENTION_DAYS),
-            ))
-        except ValueError:
-            configured_ret = app_settings.DEFAULT_RETENTION_DAYS
-        s["retention_days"] = min(configured_ret, s["max_retention_days"])
+        # Item 9: use shared retention helper
+        s["retention_days"] = app_settings.compute_effective_retention(carrier, scrapers_map)
     return {
         "scrapers": scrapers,
         "scheduler_running": scheduler.running,
@@ -377,19 +418,20 @@ async def api_imap_status():
     return imap_poller.status()
 
 
-@app.post("/api/shipments/{shipment_id}/scrape")
+@app.post("/api/shipments/{shipment_id}/scrape", dependencies=[Depends(require_api_key)])
 async def api_scrape_shipment(shipment_id: int):
     """Trigger immediate scrape for this shipment."""
     shipment = db.get_shipment(shipment_id)
     if not shipment:
         raise HTTPException(404)
+    metrics.increment("scrape.manual_trigger")
     result = await scrape_single(shipment_id)
     if "error" in result:
         return JSONResponse(content=result, status_code=422)
     return result
 
 
-@app.put("/api/shipments/{shipment_id}/scrape")
+@app.put("/api/shipments/{shipment_id}/scrape", dependencies=[Depends(require_api_key)])
 async def api_toggle_scrape(shipment_id: int, request: Request):
     """Enable/disable scraping for a shipment."""
     shipment = db.get_shipment(shipment_id)
@@ -501,10 +543,10 @@ if not _HAS_FRONTEND:
 @app.on_event("startup")
 def validate_env():
     """Warn about missing optional config."""
-    import logging  # noqa: E402
-    log = logging.getLogger("trackbox.startup")
     if not os.getenv("OPENAI_API_KEY"):
         log.warning("OPENAI_API_KEY not set - AI extraction will fail")
+    if not config.TRACKBOX_API_KEY:
+        log.warning("TRACKBOX_API_KEY not set - all mutation endpoints are unauthenticated (dev mode)")
 
 
 # SPA catch-all: serve React frontend for client-side routing
