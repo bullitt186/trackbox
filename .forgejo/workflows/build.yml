@@ -13,18 +13,16 @@ jobs:
           rm -rf /tmp/trackbox-ci
           git clone --depth 1 http://192.168.0.2:3002/bullitt/trackbox.git /tmp/trackbox-ci
 
-      - name: Test (via Docker)
-        run: |
-          docker run --rm -v /tmp/trackbox-ci:/app -w /app python:3.12-slim sh -c \
-            "pip install --quiet -r requirements.txt -r requirements-dev.txt && pytest tests/ -q"
+      - name: Test
+        run: docker build --target test /tmp/trackbox-ci
 
-      - name: Build and push image
+      - name: Build production image
         env:
           REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
         run: |
           set -ex
           echo "${REGISTRY_TOKEN}" | docker login git.stahmer.net -u bullitt --password-stdin
-          docker build -t git.stahmer.net/bullitt/trackbox:latest /tmp/trackbox-ci
+          docker build --target production -t git.stahmer.net/bullitt/trackbox:latest /tmp/trackbox-ci
           docker push git.stahmer.net/bullitt/trackbox:latest
           docker tag git.stahmer.net/bullitt/trackbox:latest git.stahmer.lan/bullitt/trackbox:latest
 
