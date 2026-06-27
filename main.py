@@ -242,12 +242,15 @@ async def api_scrape_log(
 async def api_list_scrapers():
     """List available scrapers with status."""
     scrapers = list_scrapers()
-    dhl_enabled = app_settings.get_setting("scraper_dhl_enabled", "true")
-    dhl_key = app_settings.get_setting("scraper_dhl_api_key", "")
     for s in scrapers:
-        if s["carrier"] == "dhl":
-            s["enabled"] = dhl_enabled.lower() == "true"
-            s["configured"] = bool(dhl_key)
+        carrier = s["carrier"]
+        enabled = app_settings.get_setting(f"scraper_{carrier}_enabled", "true")
+        s["enabled"] = enabled.lower() == "true"
+        # DHL needs an API key to be configured; others work without
+        if carrier == "dhl":
+            s["configured"] = bool(app_settings.get_setting("scraper_dhl_api_key", ""))
+        else:
+            s["configured"] = True
     return {
         "scrapers": scrapers,
         "scheduler_running": scheduler.running,

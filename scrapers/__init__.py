@@ -9,7 +9,13 @@ _SCRAPERS: dict[str, type[BaseScraper]] = {}
 
 def _register_builtins() -> None:
     from scrapers.dhl_api import DHLAPIScraper
+    from scrapers.dpd import DPDScraper
+    from scrapers.gls import GLSScraper
+    from scrapers.hermes import HermesScraper
     _SCRAPERS["dhl"] = DHLAPIScraper
+    _SCRAPERS["hermes"] = HermesScraper
+    _SCRAPERS["gls"] = GLSScraper
+    _SCRAPERS["dpd"] = DPDScraper
 
 
 def get_scraper(carrier: str) -> BaseScraper | None:
@@ -23,8 +29,15 @@ def get_scraper(carrier: str) -> BaseScraper | None:
     return None
 
 
-def list_scrapers() -> list[dict[str, str]]:
-    """List all registered scrapers with their carrier names."""
+def list_scrapers() -> list[dict]:
+    """List all registered scrapers with their carrier names and metadata."""
     if not _SCRAPERS:
         _register_builtins()
-    return [{"carrier": k, "name": v.name} for k, v in _SCRAPERS.items()]
+    return [
+        {
+            "carrier": k,
+            "name": v.name,
+            "default_interval_minutes": v.default_interval_minutes,
+        }
+        for k, v in _SCRAPERS.items()
+    ]

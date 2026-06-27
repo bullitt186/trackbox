@@ -38,6 +38,9 @@ class DHLAPIScraper(BaseScraper):
     """Scraper using DHL's Shipment Tracking - Unified API."""
 
     name = "DHL Unified API"
+    carrier = "dhl"
+    default_interval_minutes = 120
+    min_request_spacing = 6.0  # DHL API: 250 calls/day, min 5s between
 
     async def scrape(self, tracking_number: str) -> ScraperResult | None:
         """Query DHL API for shipment status."""

@@ -58,19 +58,32 @@ class ScraperScheduler:
 
     async def _run_cycle(self) -> None:
         """Find shipments due for scraping and process them."""
-        # Check if DHL scraper is enabled
-        dhl_enabled = settings.get_setting("scraper_dhl_enabled", "true")
-        if dhl_enabled.lower() != "true":
-            return
-
-        interval_str = settings.get_setting("scraper_dhl_interval_minutes", "60")
-        try:
-            interval_minutes = int(interval_str)
-        except ValueError:
-            interval_minutes = 60
+        from scrapers import list_scrapers
 
         now = datetime.now(timezone.utc)
-        cutoff = (now - timedelta(minutes=interval_minutes)).isoformat()
+        scrapers_info = list_scrapers()
+
+        # Find the shortest enabled interval to use as the cutoff
+        min_interval = None
+        enabled_carriers: set[str] = set()
+        for s in scrapers_info:
+            carrier = s["carrier"]
+            enabled = settings.get_setting(f"scraper_{carrier}_enabled", "true")
+            if enabled.lower() != "true":
+                continue
+            enabled_carriers.add(carrier)
+            interval_str = settings.get_setting(f"scraper_{carrier}_interval_minutes", str(s["default_interval_minutes"]))
+            try:
+                interval = int(interval_str)
+            except ValueError:
+                interval = s["default_interval_minutes"]
+            if min_interval is None or interval < min_interval:
+                min_interval = interval
+
+        if not enabled_carriers or min_interval is None:
+            return
+
+        cutoff = (now - timedelta(minutes=min_interval)).isoformat()
 
         # Find shipments due for scraping
         conn = db.get_conn()
@@ -89,24 +102,28 @@ class ScraperScheduler:
         if not shipments_due:
             return
 
+        # Filter to only shipments whose carrier has an enabled scraper
+        shipments_due = [
+            s for s in shipments_due
+            if (s.get("carrier") or "").lower() in enabled_carriers
+            or (not s.get("carrier") and "dhl" in enabled_carriers)
+        ]
+        if not shipments_due:
+            return
+
         self._last_cycle_at = now.isoformat()
         log.info("Scraper cycle: %d shipment(s) due", len(shipments_due))
 
-        # Add random jitter: spread across available time
-        # If 5 packages in 60min interval, scrape one every ~12min
-        if len(shipments_due) > 1:
-            spacing = (interval_minutes * 60) / len(shipments_due)
-            random.shuffle(shipments_due)
-        else:
-            spacing = 0
+        random.shuffle(shipments_due)
 
         for i, shipment in enumerate(shipments_due):
             if not self._running:
                 break
-            # DHL rate limit: min 5s between requests. Add jitter on top.
             if i > 0:
-                min_delay = 6  # 5s DHL minimum + 1s safety
-                jitter = random.uniform(min_delay, max(min_delay, spacing * 0.5))
+                # Use the scraper's min_request_spacing for delay
+                scraper = get_scraper((shipment.get("carrier") or "dhl").lower())
+                min_delay = scraper.min_request_spacing if scraper else 5.0
+                jitter = random.uniform(min_delay, min_delay * 2)
                 await asyncio.sleep(jitter)
 
             await self._scrape_shipment(shipment)

@@ -11,6 +11,7 @@ interface ScraperInfo {
   name: string
   enabled: boolean
   configured: boolean
+  default_interval_minutes: number
 }
 
 interface ScrapersResponse {
@@ -22,31 +23,39 @@ interface ScrapersResponse {
 const BASE = ""
 
 export default function Settings() {
-  const [, setSettings] = useState<Record<string, string>>({})
+  const [, setAllSettings] = useState<Record<string, string>>({})
   const [scraperStatus, setScraperStatus] = useState<ScrapersResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-
-  // Form state
-  const [dhlEnabled, setDhlEnabled] = useState(true)
-  const [dhlApiKey, setDhlApiKey] = useState("")
-  const [dhlInterval, setDhlInterval] = useState("120")
   const [recentLog, setRecentLog] = useState<ScrapeLogEntry[]>([])
   const [shipmentMap, setShipmentMap] = useState<Record<number, Shipment>>({})
+
+  // Per-carrier form state: { carrier: { enabled, interval, apiKey? } }
+  const [scraperForms, setScraperForms] = useState<Record<string, { enabled: boolean; interval: string; apiKey?: string }>>({})
 
   useEffect(() => {
     Promise.all([
       fetch(`${BASE}/api/settings`).then(r => r.json()),
       fetch(`${BASE}/api/scrapers`).then(r => r.json()),
-      fetchScrapeLog({ carrier: "dhl", limit: 30 }),
+      fetchScrapeLog({ limit: 30 }),
       fetchShipments(),
     ]).then(([settingsData, scrapersData, logData, shipmentsData]) => {
-      setSettings(settingsData)
+      setAllSettings(settingsData)
       setScraperStatus(scrapersData)
-      setDhlEnabled(settingsData.scraper_dhl_enabled === "true")
-      setDhlApiKey(settingsData.scraper_dhl_api_key || "")
-      setDhlInterval(settingsData.scraper_dhl_interval_minutes || "60")
+
+      // Build form state from settings for each scraper
+      const forms: Record<string, { enabled: boolean; interval: string; apiKey?: string }> = {}
+      for (const s of (scrapersData as ScrapersResponse).scrapers) {
+        const c = s.carrier
+        forms[c] = {
+          enabled: settingsData[`scraper_${c}_enabled`] === "true",
+          interval: settingsData[`scraper_${c}_interval_minutes`] || String(s.default_interval_minutes),
+          ...(c === "dhl" ? { apiKey: settingsData.scraper_dhl_api_key || "" } : {}),
+        }
+      }
+      setScraperForms(forms)
+
       setRecentLog(logData)
       const map: Record<number, Shipment> = {}
       for (const s of shipmentsData) map[s.id] = s
@@ -57,10 +66,13 @@ export default function Settings() {
 
   const handleSave = async () => {
     setSaving(true)
-    const payload = {
-      scraper_dhl_enabled: dhlEnabled ? "true" : "false",
-      scraper_dhl_api_key: dhlApiKey,
-      scraper_dhl_interval_minutes: dhlInterval,
+    const payload: Record<string, string> = {}
+    for (const [carrier, form] of Object.entries(scraperForms)) {
+      payload[`scraper_${carrier}_enabled`] = form.enabled ? "true" : "false"
+      payload[`scraper_${carrier}_interval_minutes`] = form.interval
+      if (form.apiKey !== undefined) {
+        payload[`scraper_${carrier}_api_key`] = form.apiKey
+      }
     }
     const resp = await fetch(`${BASE}/api/settings`, {
       method: "PUT",
@@ -68,10 +80,17 @@ export default function Settings() {
       body: JSON.stringify(payload),
     })
     const updated = await resp.json()
-    setSettings(updated)
+    setAllSettings(updated)
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const updateForm = (carrier: string, field: string, value: string | boolean) => {
+    setScraperForms(prev => ({
+      ...prev,
+      [carrier]: { ...prev[carrier], [field]: value },
+    }))
   }
 
   if (loading) {
@@ -87,126 +106,101 @@ export default function Settings() {
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
       <h1 className="text-2xl font-bold">Settings</h1>
 
-      {/* DHL Scraper section */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">DHL Scraper</CardTitle>
-            <div className="flex items-center gap-2">
-              {scraperStatus?.scheduler_running && (
-                <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
-                  Scheduler Running
-                </Badge>
-              )}
-              {dhlEnabled ? (
-                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
-                  Enabled
-                </Badge>
-              ) : (
-                <Badge variant="secondary">Disabled</Badge>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Enable/Disable toggle */}
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">Enable DHL Scraping</label>
-            <button
-              onClick={() => setDhlEnabled(!dhlEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                dhlEnabled ? "bg-primary" : "bg-muted"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  dhlEnabled ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* API Key */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">API Key</label>
-            <Input
-              type="password"
-              placeholder="Enter DHL API key..."
-              value={dhlApiKey}
-              onChange={e => setDhlApiKey(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Get your API key from the DHL Developer Portal
-            </p>
-          </div>
-
-          {/* Interval */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Check Interval (minutes)</label>
-            <Input
-              type="number"
-              min="10"
-              max="1440"
-              value={dhlInterval}
-              onChange={e => setDhlInterval(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              How often to check for status updates. Minimum 10 min, default 120 min. DHL allows 250 calls/day (10 packages × 24 checks = 240/day at 60min)
-            </p>
-          </div>
-
-          {/* Status info */}
-          {scraperStatus?.last_cycle_at && (
-            <div className="text-xs text-muted-foreground pt-2 border-t border-border">
-              Last scrape cycle: {new Date(scraperStatus.last_cycle_at).toLocaleString()}
-            </div>
-          )}
-
-          {/* Save button */}
-          <div className="flex items-center gap-3 pt-2">
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save Settings"}
-            </Button>
-            {saved && (
-              <span className="text-sm text-emerald-600">Settings saved!</span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Available Scrapers */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Available Scrapers</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {scraperStatus?.scrapers && scraperStatus.scrapers.length > 0 ? (
-            <div className="space-y-2">
-              {scraperStatus.scrapers.map(s => (
-                <div key={s.carrier} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                  <div>
-                    <span className="text-sm font-medium">{s.name}</span>
-                    <span className="text-xs text-muted-foreground ml-2">({s.carrier})</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {s.configured ? (
-                      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
-                        Configured
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
-                        Not Configured
-                      </Badge>
-                    )}
-                  </div>
+      {/* Scraper Cards */}
+      {scraperStatus?.scrapers.map(s => {
+        const form = scraperForms[s.carrier]
+        if (!form) return null
+        return (
+          <Card key={s.carrier}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">{s.name} Scraper</CardTitle>
+                <div className="flex items-center gap-2">
+                  {scraperStatus?.scheduler_running && s.carrier === scraperStatus.scrapers[0]?.carrier && (
+                    <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300">
+                      Scheduler Running
+                    </Badge>
+                  )}
+                  {form.enabled ? (
+                    <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                      Enabled
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">Disabled</Badge>
+                  )}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No scrapers registered</p>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Enable/Disable toggle */}
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Enable {s.name} Scraping</label>
+                <button
+                  onClick={() => updateForm(s.carrier, "enabled", !form.enabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    form.enabled ? "bg-primary" : "bg-muted"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      form.enabled ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* API Key (DHL only) */}
+              {form.apiKey !== undefined && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">API Key</label>
+                  <Input
+                    type="password"
+                    placeholder="Enter DHL API key..."
+                    value={form.apiKey}
+                    onChange={e => updateForm(s.carrier, "apiKey", e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Get your API key from the DHL Developer Portal
+                  </p>
+                </div>
+              )}
+
+              {/* Interval */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Check Interval (minutes)</label>
+                <Input
+                  type="number"
+                  min="10"
+                  max="1440"
+                  value={form.interval}
+                  onChange={e => updateForm(s.carrier, "interval", e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  How often to check for status updates. Minimum 10 min, default {s.default_interval_minutes} min.
+                  {s.carrier === "dhl" && " DHL allows 250 calls/day."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
+
+      {/* Save button */}
+      <div className="flex items-center gap-3">
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Settings"}
+        </Button>
+        {saved && (
+          <span className="text-sm text-emerald-600">Settings saved!</span>
+        )}
+      </div>
+
+      {/* Status info */}
+      {scraperStatus?.last_cycle_at && (
+        <p className="text-xs text-muted-foreground">
+          Last scrape cycle: {new Date(scraperStatus.last_cycle_at).toLocaleString()}
+        </p>
+      )}
 
       {/* Recent Scrape Activity */}
       <Card>
@@ -223,6 +217,7 @@ export default function Settings() {
                   <tr className="border-b border-border">
                     <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Time</th>
                     <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Shipment</th>
+                    <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Carrier</th>
                     <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Status</th>
                     <th className="text-left py-1.5 pr-3 font-medium text-muted-foreground">Duration</th>
                     <th className="text-left py-1.5 font-medium text-muted-foreground">Message</th>
@@ -243,6 +238,9 @@ export default function Settings() {
                           >
                             {ship?.title || `#${entry.shipment_id}`}
                           </Link>
+                        </td>
+                        <td className="py-1.5 pr-3 text-muted-foreground uppercase">
+                          {entry.carrier || "-"}
                         </td>
                         <td className="py-1.5 pr-3">
                           <SettingsScrapeStatusIcon status={entry.status} />

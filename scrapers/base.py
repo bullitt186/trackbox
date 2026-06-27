@@ -20,6 +20,9 @@ class BaseScraper(ABC):
     """Abstract base for carrier scrapers."""
 
     name: str = "unknown"
+    carrier: str = ""
+    default_interval_minutes: int = 60
+    min_request_spacing: float = 5.0
 
     @abstractmethod
     async def scrape(self, tracking_number: str) -> ScraperResult | None:
