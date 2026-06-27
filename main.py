@@ -54,8 +54,18 @@ def startup():
     db.init_db()
 
 
+_ingest_timestamps: list = []
+
+
 @app.post("/ingest")
 async def ingest_email(payload: EmailPayload):
+    # ponytail: simple in-memory rate limit, 30 req/min
+    now = time.time()
+    _ingest_timestamps[:] = [t for t in _ingest_timestamps if now - t < 60]
+    if len(_ingest_timestamps) >= 30:
+        raise HTTPException(429, detail="Rate limit exceeded (30/min)")
+    _ingest_timestamps.append(now)
+
     email = {"from": payload.from_, "subject": payload.subject, "body": payload.body, "html": payload.html, "product_name": payload.product_name, "message_id": payload.message_id, "date": payload.date}
     result = process_email(email)
     return result
