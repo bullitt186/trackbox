@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes archive-out {
+  0%   { opacity: 1; transform: scale(1);    max-height: 300px; margin-bottom: 1rem; }
+  55%  { opacity: 0; transform: scale(0.88); max-height: 300px; margin-bottom: 1rem; }
+  100% { opacity: 0; transform: scale(0.88); max-height: 0;     margin-bottom: 0;    padding: 0; }
+}
+.animate-archive-out {
+  animation: archive-out 380ms ease-in forwards;
+  pointer-events: none;
+  overflow: hidden;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

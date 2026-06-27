@@ -47,12 +47,14 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-function ShipmentCard({ shipment, onArchive, onUnarchive }: {
+function ShipmentCard({ shipment, onArchive, onUnarchive, isArchiving = false }: {
   shipment: Shipment
   onArchive?: (id: number) => void
   onUnarchive?: (id: number) => void
+  isArchiving?: boolean
 }) {
   return (
+    <div className={isArchiving ? "animate-archive-out" : undefined}>
     <Link to={`/shipments/${shipment.id}`}>
       <Card className="group hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
         <CardContent className="p-4">
@@ -143,6 +145,7 @@ function ShipmentCard({ shipment, onArchive, onUnarchive }: {
         </CardContent>
       </Card>
     </Link>
+    </div>
   )
 }
 
@@ -167,6 +170,7 @@ export default function Dashboard() {
   const [showDelivered, setShowDelivered] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [archivingIds, setArchivingIds] = useState<Set<number>>(new Set())
 
   const load = useCallback(async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true)
@@ -193,7 +197,10 @@ export default function Dashboard() {
   }, [load])
 
   const handleArchive = async (id: number) => {
+    setArchivingIds(prev => new Set(prev).add(id))
+    await new Promise(r => setTimeout(r, 380))
     await archiveShipment(id, true)
+    setArchivingIds(prev => { const s = new Set(prev); s.delete(id); return s })
     load()
   }
 
@@ -250,7 +257,7 @@ export default function Dashboard() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {active.map(s => (
-                  <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} />
+                  <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
                 ))}
               </div>
             </section>
@@ -268,7 +275,7 @@ export default function Dashboard() {
               {showDelivered && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {delivered.map(s => (
-                    <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} />
+                    <ShipmentCard key={s.id} shipment={s} onArchive={handleArchive} isArchiving={archivingIds.has(s.id)} />
                   ))}
                 </div>
               )}

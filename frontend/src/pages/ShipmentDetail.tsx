@@ -240,7 +240,11 @@ export default function ShipmentDetail() {
     if (!shipment) return
     const isArchived = shipment.archived === 1
     await archiveShipment(shipment.id, !isArchived)
-    await load()
+    if (!isArchived) {
+      navigate("/")
+    } else {
+      await load()
+    }
   }
 
   const handleScrapeNow = async () => {
