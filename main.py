@@ -241,7 +241,7 @@ async def api_update_shipment(shipment_id: int, request: Request):
     if not shipment:
         raise HTTPException(404)
     body = await request.json()
-    allowed = {"title", "carrier", "tracking_number", "order_number", "tracking_link", "current_state"}
+    allowed = {"title", "carrier", "tracking_number", "order_number", "tracking_link", "current_state", "archived"}
     updates = {k: v for k, v in body.items() if k in allowed and v is not None}
     if "current_state" in updates:
         new_state = updates["current_state"]
