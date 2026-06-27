@@ -111,7 +111,7 @@ def process_email(email: dict) -> dict:
         if should_update_state(shipment["current_state"], status):
             updates["current_state"] = status
         if updates:
-            db.update_shipment(shipment["id"], updates)
+            db.update_shipment(shipment["id"], updates, occurred_at=email.get("date"))
         shipment_id = shipment["id"]
         action = "updated"
         final_state = updates.get("current_state") or shipment["current_state"]
