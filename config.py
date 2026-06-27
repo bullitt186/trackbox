@@ -18,6 +18,11 @@ CORS_ORIGINS: list[str] = [o.strip() for o in _cors_raw.split(",") if o.strip()]
 # API key for authenticating API requests (X-API-Key header).
 # When empty, authentication is disabled (trusted-network / reverse-proxy deployment).
 API_KEY: str = os.getenv("TRACKBOX_API_KEY", "")
+# Alias for compatibility with architect branch references
+TRACKBOX_API_KEY: str = API_KEY
+
+# Retention for scrape_log rows (days). Older rows are pruned nightly.
+SCRAPE_LOG_RETENTION_DAYS: int = int(os.getenv("SCRAPE_LOG_RETENTION_DAYS", "30"))
 
 IMAP_HOST: str = os.getenv("IMAP_HOST", "")
 IMAP_PORT: int = int(os.getenv("IMAP_PORT", "993"))

@@ -9,6 +9,7 @@ import config
 DB_PATH = config.DATABASE_PATH
 
 _log = logging.getLogger("trackbox.db")
+log = _log  # alias for architect-branch compatibility
 
 
 def get_conn() -> sqlite3.Connection:
@@ -127,6 +128,20 @@ def init_db() -> None:
         """,
         (_now(),),
     )
+
+    # Indexes on hot query paths (idempotent)
+    conn.executescript("""
+        CREATE INDEX IF NOT EXISTS idx_events_message_id
+            ON events(message_id);
+        CREATE INDEX IF NOT EXISTS idx_shipments_tracking_number
+            ON shipments(tracking_number);
+        CREATE INDEX IF NOT EXISTS idx_shipments_order_number
+            ON shipments(order_number);
+        CREATE INDEX IF NOT EXISTS idx_shipments_scrape_queue
+            ON shipments(scrape_enabled, scrape_fail_count, current_state, last_scraped_at);
+        CREATE INDEX IF NOT EXISTS idx_scrape_log_occurred_at
+            ON scrape_log(occurred_at);
+    """)
     conn.commit()
 
     # --- Versioned, append-only migration list ---
@@ -185,6 +200,21 @@ def init_db() -> None:
         _log.info("Migration applied: fix_delivered_state")
 
     conn.close()
+
+
+def purge_old_scrape_log(retention_days: int) -> int:
+    """Delete scrape_log rows older than retention_days. Returns rows deleted."""
+    conn = get_conn()
+    cur = conn.execute(
+        "DELETE FROM scrape_log WHERE occurred_at < datetime('now', ?)",
+        (f"-{retention_days} days",),
+    )
+    deleted = cur.rowcount
+    conn.commit()
+    conn.close()
+    if deleted:
+        log.info("scrape_log retention: deleted %d rows older than %d days", deleted, retention_days)
+    return deleted
 
 
 def _now():

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import time
@@ -14,7 +15,7 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
-import config as _config
+import config
 
 _log = logging.getLogger("trackbox.api")
 
@@ -26,7 +27,7 @@ _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 async def _require_api_key(api_key: str | None = Security(_api_key_header)) -> None:
     """Dependency that enforces X-API-Key when TRACKBOX_API_KEY is configured."""
-    configured = _config.API_KEY
+    configured = config.API_KEY
     if not configured:
         # Auth disabled — trusted-network / reverse-proxy deployment.
         return
@@ -42,8 +43,8 @@ _WRITE_RATE_LIMIT = 60  # max write ops per minute across all write endpoints
 
 _START_TIME = time.time()
 
-import config as _cfg
 import db
+import metrics
 import settings as app_settings
 from imap_poller import IMAPPoller
 from ingest import process_email
@@ -54,6 +55,8 @@ from scheduler import ScraperScheduler, scrape_single
 from scheduler import set_notifier as scheduler_set_notifier
 from scrapers import list_scrapers
 
+log = logging.getLogger("trackbox.main")
+
 VALID_STATES = [
     "unknown", "preparing", "shipped", "in_transit",
     "out_for_delivery", "delivered", "delayed", "exception"
@@ -62,7 +65,7 @@ VALID_STATES = [
 app = FastAPI(title="Trackbox")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cfg.CORS_ORIGINS,
+    allow_origins=config.CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*", "X-API-Key"],
 )
@@ -99,7 +102,7 @@ async def startup():
     setup_logging()
     # Validate config and DB writability before touching anything else.
     # Raises RuntimeError on critical failure — uvicorn will exit and CI catches it.
-    _cfg.validate_config()
+    config.validate_config()
     db.init_db()
     app_settings.init_settings()
     ingest_set_notifier(mqtt_notifier)
@@ -118,6 +121,11 @@ async def shutdown():
     await mqtt_notifier.stop()
 
 
+# NOTE: The ingest rate limiter uses a module-level Python list that is reset
+# on every process restart (deploy, crash, OOM kill). This means a full burst
+# of RATE_LIMIT_PER_MINUTE requests is allowed immediately after startup.
+# This is intentional for single-instance deployments; for stronger guarantees
+# the window state should be moved to SQLite or enforced at the reverse-proxy layer.
 _ingest_timestamps: list = []
 
 
@@ -132,20 +140,33 @@ def _check_write_rate_limit() -> None:
 
 @app.post("/ingest", dependencies=[Depends(_require_api_key)])
 async def ingest_email(payload: EmailPayload):
-    # ponytail: simple in-memory rate limit, 30 req/min
+    # Simple in-memory rate limit — see note above about restart-reset behaviour
     now = time.time()
     _ingest_timestamps[:] = [t for t in _ingest_timestamps if now - t < 60]
-    if len(_ingest_timestamps) >= 30:
-        raise HTTPException(429, detail="Rate limit exceeded (30/min)")
+    if len(_ingest_timestamps) >= config.RATE_LIMIT_PER_MINUTE:
+        metrics.increment("ingest.rate_limited")
+        raise HTTPException(429, detail=f"Rate limit exceeded ({config.RATE_LIMIT_PER_MINUTE}/min)")
     _ingest_timestamps.append(now)
 
     request_id = str(uuid.uuid4())[:8]
-    email = {"from": payload.from_, "subject": payload.subject, "body": payload.body, "html": payload.html, "product_name": payload.product_name, "message_id": payload.message_id, "date": payload.date}
+    email = {
+        "from": payload.from_,
+        "subject": payload.subject,
+        "body": payload.body,
+        "html": payload.html,
+        "product_name": payload.product_name,
+        "message_id": payload.message_id,
+        "date": payload.date,
+    }
     try:
-        result = process_email(email)
+        # Run blocking ingest pipeline in a thread-pool executor so the event loop
+        # stays responsive for the scheduler, IMAP poller, and MQTT tasks.
+        result = await asyncio.to_thread(process_email, email)
     except Exception:
         _log.exception("Ingest failed [%s]", request_id)
+        metrics.increment("ingest.error")
         return {"shipment_id": None, "state": None, "action": "error", "parser_status": "error", "error": "Internal processing error", "request_id": request_id}
+    metrics.increment(f"ingest.{result.get('action', 'unknown')}")
     result["request_id"] = request_id
     status = 201 if result.get("action") == "created" else 200
     return JSONResponse(content=result, status_code=status)
@@ -158,7 +179,13 @@ async def health():
     conn.execute("SELECT 1").fetchone()
     conn.close()
     uptime = int(time.time() - _START_TIME)
-    return {"status": "ok", "version": _config.TRACKBOX_VERSION, "build_time": _config.TRACKBOX_BUILD_TIME, "uptime_seconds": uptime}
+    return {"status": "ok", "version": config.TRACKBOX_VERSION, "build_time": config.TRACKBOX_BUILD_TIME, "uptime_seconds": uptime}
+
+
+@app.get("/metrics")
+async def api_metrics():
+    """Expose in-process counters for observability."""
+    return metrics.get_metrics()
 
 
 @app.get("/api/stats", dependencies=[Depends(_require_api_key)])
@@ -196,15 +223,8 @@ def _annotate_stalled(shipments: list[dict]) -> None:
         # Retention window exceeded (scraping would find nothing anyway)
         if not stalled and s.get("last_updated_at"):
             carrier = (s.get("carrier") or "").lower()
-            max_ret = scrapers_map.get(carrier, {}).get("max_retention_days", app_settings.DEFAULT_RETENTION_DAYS)
-            try:
-                configured_ret = int(app_settings.get_setting(
-                    f"scraper_{carrier}_retention_days",
-                    str(app_settings.DEFAULT_RETENTION_DAYS),
-                ))
-            except ValueError:
-                configured_ret = app_settings.DEFAULT_RETENTION_DAYS
-            effective_ret = min(configured_ret, max_ret)
+            # Item 9: use shared retention helper instead of inline calculation
+            effective_ret = app_settings.compute_effective_retention(carrier, scrapers_map)
             try:
                 last_updated = datetime.fromisoformat(s["last_updated_at"].replace("Z", "+00:00"))
                 if last_updated.tzinfo is None:
@@ -259,16 +279,9 @@ async def api_shipment_detail(shipment_id: int):
     tracking_expires_at = None
     if shipment.get("current_state") == "delivered" and shipment.get("last_updated_at"):
         carrier = (shipment.get("carrier") or "").lower()
-        scrapers = {s["carrier"]: s for s in _list_scrapers()}
-        max_ret = scrapers.get(carrier, {}).get("max_retention_days", app_settings.DEFAULT_RETENTION_DAYS)
-        try:
-            configured_ret = int(app_settings.get_setting(
-                f"scraper_{carrier}_retention_days",
-                str(app_settings.DEFAULT_RETENTION_DAYS),
-            ))
-        except ValueError:
-            configured_ret = app_settings.DEFAULT_RETENTION_DAYS
-        effective_ret = min(configured_ret, max_ret)
+        scrapers_map = {s["carrier"]: s for s in _list_scrapers()}
+        # Item 9: use shared retention helper
+        effective_ret = app_settings.compute_effective_retention(carrier, scrapers_map)
         try:
             last_updated = datetime.fromisoformat(shipment["last_updated_at"].replace("Z", "+00:00"))
             if last_updated.tzinfo is None:
@@ -311,6 +324,7 @@ async def api_delete_shipment(shipment_id: int):
     if not shipment:
         raise HTTPException(404)
     db.delete_shipment(shipment_id)
+    metrics.increment("shipments.deleted")
     return {"deleted": shipment_id}
 
 
@@ -387,6 +401,7 @@ async def api_scrape_log(
 async def api_list_scrapers():
     """List available scrapers with status."""
     scrapers = list_scrapers()
+    scrapers_map = {s["carrier"]: s for s in scrapers}
     for s in scrapers:
         carrier = s["carrier"]
         enabled = app_settings.get_setting(f"scraper_{carrier}_enabled", "true")
@@ -402,15 +417,8 @@ async def api_list_scrapers():
             )
         else:
             s["configured"] = True
-        # Inject user-configured retention days (capped at max)
-        try:
-            configured_ret = int(app_settings.get_setting(
-                f"scraper_{carrier}_retention_days",
-                str(app_settings.DEFAULT_RETENTION_DAYS),
-            ))
-        except ValueError:
-            configured_ret = app_settings.DEFAULT_RETENTION_DAYS
-        s["retention_days"] = min(configured_ret, s["max_retention_days"])
+        # Item 9: use shared retention helper
+        s["retention_days"] = app_settings.compute_effective_retention(carrier, scrapers_map)
     return {
         "scrapers": scrapers,
         "scheduler_running": scheduler.running,
@@ -431,6 +439,7 @@ async def api_scrape_shipment(shipment_id: int):
     shipment = db.get_shipment(shipment_id)
     if not shipment:
         raise HTTPException(404)
+    metrics.increment("scrape.manual_trigger")
     result = await scrape_single(shipment_id)
     if "error" in result:
         return JSONResponse(content=result, status_code=422)
